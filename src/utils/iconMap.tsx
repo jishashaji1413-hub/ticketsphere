@@ -1,0 +1,87 @@
+import {
+  BarChart3,
+  Box,
+  Briefcase,
+  CheckSquare,
+  CircleDashed,
+  Cpu,
+  Database,
+  FilePlus2,
+  FileText,
+  Flag,
+  Folder,
+  FolderKanban,
+  GitBranch,
+  Globe,
+  HelpCircle,
+  Inbox,
+  KeyRound,
+  Layers,
+  LayoutDashboard,
+  Link2,
+  List,
+  Mail,
+  MessagesSquare,
+  PieChart,
+  RefreshCw,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Ticket,
+  TrendingUp,
+  UserCheck,
+  Users,
+  Wrench,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
+
+export const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Ticket,
+  List,
+  UserCheck,
+  Inbox,
+  FilePlus2,
+  CircleDashed,
+  FolderKanban,
+  Folder,
+  CheckSquare,
+  Flag,
+  GitBranch,
+  Link2,
+  Briefcase,
+  RefreshCw,
+  Mail,
+  MessagesSquare,
+  FileText,
+  BarChart3,
+  PieChart,
+  TrendingUp,
+  Layers,
+  ShieldCheck,
+  Users,
+  KeyRound,
+  SlidersHorizontal,
+  Settings,
+  Box,
+  Cpu,
+  Globe,
+  Wrench,
+  Database,
+  Zap,
+  HelpCircle,
+};
+
+export const AVAILABLE_ICONS = Object.keys(ICON_MAP);
+
+export function DynamicIcon({
+  name,
+  className = 'h-4 w-4',
+}: {
+  name: string;
+  className?: string;
+}) {
+  const Icon = ICON_MAP[name] ?? Folder;
+  return <Icon className={className} />;
+}
