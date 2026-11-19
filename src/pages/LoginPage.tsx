@@ -94,30 +94,29 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-12 bg-[#F6F7F9] text-zinc-900 dark:bg-[#111215] dark:text-zinc-100 transition-colors">
       {/* Left Architectural Editorial Panel */}
-      <div className="hidden lg:flex lg:col-span-5 relative flex-col justify-between bg-gradient-to-br from-[#16181D] via-[#151A26] to-[#111318] text-zinc-100 p-10 xl:p-12 border-r border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-2.5">
+      <div className="hidden lg:flex lg:col-span-5 relative flex-col justify-between bg-gradient-to-br from-[#16181D] via-[#151A26] to-[#111318] text-zinc-100 p-10 xl:p-12 border-r border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-fintech-grid opacity-80" />
+        <div className="relative z-10 flex items-center gap-2.5 animate-fade-up">
           <div className="h-8 w-8 rounded-md bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-xs">
             <Layers className="h-4 w-4" />
           </div>
           <span className="text-base font-semibold tracking-tight text-white">TicketSphere</span>
         </div>
 
-        <div className="max-w-md space-y-6">
+        <div className="relative z-10 max-w-md space-y-6 animate-fade-up" style={{ animationDelay: '70ms' }}>
           <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            <p className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-blue-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               IT Service Management
             </p>
             <h1 className="text-2xl xl:text-3xl font-semibold tracking-tight leading-snug text-white">
               Structured incident tracking, Outlook mail sync, and Jira escalation.
             </h1>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              Built for CFSS &amp; Asset Management operations with role-based permissions and
-              complete audit history.
-            </p>
+
           </div>
 
-          <div className="space-y-3 pt-2 border-t border-zinc-800">
-            <div className="flex items-start gap-3 py-2">
+          <div className="space-y-2.5 pt-2 border-t border-zinc-800/80">
+            <div className="ts-card-hover flex items-start gap-3 rounded-lg p-2.5 border border-transparent hover:border-zinc-800 hover:bg-white/[0.02]">
               <Mail className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-zinc-200">Microsoft Graph Outlook</p>
@@ -126,7 +125,7 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-start gap-3 py-2">
+            <div className="ts-card-hover flex items-start gap-3 rounded-lg p-2.5 border border-transparent hover:border-zinc-800 hover:bg-white/[0.02]">
               <GitBranch className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-zinc-200">Jira Cloud Integration</p>
@@ -135,7 +134,7 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-start gap-3 py-2">
+            <div className="ts-card-hover flex items-start gap-3 rounded-lg p-2.5 border border-transparent hover:border-zinc-800 hover:bg-white/[0.02]">
               <ShieldCheck className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-zinc-200">Dynamic RBAC &amp; Modules</p>
@@ -147,7 +146,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="text-xs text-zinc-500 border-t border-zinc-800 pt-5">
+        <div className="relative z-10 text-xs text-zinc-500 border-t border-zinc-800 pt-5">
           TicketSphere Platform
         </div>
       </div>
@@ -168,7 +167,7 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <div className="rounded-lg bg-white border border-zinc-200 shadow-xs dark:bg-[#181A1F] dark:border-zinc-800 p-7">
+          <div className="animate-fade-up rounded-lg bg-white border border-zinc-200 shadow-xs dark:bg-[#181A1F] dark:border-zinc-800 p-7">
             <div className="mb-6">
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
                 {needsInitialAdmin
@@ -206,11 +205,10 @@ export default function LoginPage() {
                         setMode('login');
                         setError(null);
                       }}
-                      className={`rounded py-1.5 transition ${
-                        mode === 'login'
+                      className={`rounded py-1.5 transition ${mode === 'login'
                           ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
                           : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
-                      }`}
+                        }`}
                     >
                       Sign In
                     </button>
@@ -220,11 +218,10 @@ export default function LoginPage() {
                         setMode('register');
                         setError(null);
                       }}
-                      className={`rounded py-1.5 transition ${
-                        mode === 'register'
+                      className={`rounded py-1.5 transition ${mode === 'register'
                           ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
                           : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
-                      }`}
+                        }`}
                     >
                       Create Account
                     </button>
@@ -245,7 +242,7 @@ export default function LoginPage() {
                         Full Name
                       </label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                         <input
                           type="text"
                           required
@@ -263,7 +260,7 @@ export default function LoginPage() {
                       Work Email
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                       <input
                         type="email"
                         required
@@ -280,7 +277,7 @@ export default function LoginPage() {
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                       <input
                         type="password"
                         required

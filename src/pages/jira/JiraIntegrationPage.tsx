@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   AlertCircle,
   CheckCircle2,
@@ -40,11 +40,35 @@ interface LinkedJiraIssue {
 
 export default function JiraIntegrationPage() {
   const { hasPermission } = useAuth();
+  const location = useLocation();
   const canManage = hasPermission('jira.manage');
+
+  const section: 'issues' | 'projects' | 'sync' = location.pathname.endsWith('/projects')
+    ? 'projects'
+    : location.pathname.endsWith('/sync')
+      ? 'sync'
+      : 'issues';
+
+  const sectionMeta = {
+    issues: {
+      title: 'Linked & Jira Issues',
+      subtitle: 'Browse Jira issues by space, search live issues, and manage issues linked to TicketSphere tickets.',
+    },
+    projects: {
+      title: 'Jira Projects & Spaces',
+      subtitle: 'View your connected Jira Cloud projects/spaces and inspect issues per space.',
+    },
+    sync: {
+      title: 'Jira Synchronization & Connection',
+      subtitle: 'Configure Jira Cloud REST API credentials, test connectivity, and sync linked issues.',
+    },
+  }[section];
 
   const [status, setStatus] = useState<JiraStatus | null>(null);
   const [linkedIssues, setLinkedIssues] = useState<LinkedJiraIssue[]>([]);
-  const [projects, setProjects] = useState<Array<{ id: string; key: string; name: string }>>([]);
+  const [projects, setProjects] = useState<
+    Array<{ id: string; key: string; name: string; projectTypeKey?: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const [baseUrl, setBaseUrl] = useState('');
@@ -56,10 +80,19 @@ export default function JiraIntegrationPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProjectKey, setSelectedProjectKey] = useState('');
   const [searchResults, setSearchResults] = useState<
-    Array<{ jiraKey: string; summary: string; statusName: string; issueUrl: string }>
+    Array<{ jiraKey: string; projectKey?: string; summary: string; statusName: string; issueUrl: string }>
   >([]);
   const [searching, setSearching] = useState(false);
+  const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
+  const [transitions, setTransitions] = useState<
+    Array<{ id: string; name: string; toStatus: string }>
+  >([]);
+  const [editSummary, setEditSummary] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editTransitionId, setEditTransitionId] = useState('');
+  const [savingIssue, setSavingIssue] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -74,11 +107,18 @@ export default function JiraIntegrationPage() {
         setBaseUrl(statusRes.data.data.integration.baseUrl);
         setEmail(statusRes.data.data.integration.email);
         try {
-          const projRes = await api.get<{
-            success: boolean;
-            data: Array<{ id: string; key: string; name: string }>;
-          }>('/jira/projects');
+          const [projRes, issuesRes] = await Promise.all([
+            api.get<{
+              success: boolean;
+              data: Array<{ id: string; key: string; name: string }>;
+            }>('/jira/projects'),
+            api.get<{
+              success: boolean;
+              data: Array<{ jiraKey: string; summary: string; statusName: string; issueUrl: string }>;
+            }>('/jira/search', { params: { q: '' } }),
+          ]);
           setProjects(projRes.data.data);
+          setSearchResults(issuesRes.data.data);
         } catch {
           // ignore if credentials aren't verified yet
         }
@@ -133,15 +173,25 @@ export default function JiraIntegrationPage() {
     }
   };
 
-  const handleSearchJira = async (e: FormEvent) => {
-    e.preventDefault();
+  const runJiraSearch = async (query: string, projectKey: string) => {
     setSearching(true);
     setError(null);
     try {
       const res = await api.get<{
         success: boolean;
-        data: Array<{ jiraKey: string; summary: string; statusName: string; issueUrl: string }>;
-      }>('/jira/search', { params: { q: searchQuery } });
+        data: Array<{
+          jiraKey: string;
+          projectKey?: string;
+          summary: string;
+          statusName: string;
+          issueUrl: string;
+        }>;
+      }>('/jira/search', {
+        params: {
+          q: query,
+          projectKey: projectKey || undefined,
+        },
+      });
       setSearchResults(res.data.data);
     } catch (err: unknown) {
       setError(
@@ -153,22 +203,77 @@ export default function JiraIntegrationPage() {
     }
   };
 
+  const handleSearchJira = async (e: FormEvent) => {
+    e.preventDefault();
+    await runJiraSearch(searchQuery, selectedProjectKey);
+  };
+
+  const handleSelectProject = async (projectKey: string) => {
+    setSelectedProjectKey(projectKey);
+    await runJiraSearch(searchQuery, projectKey);
+  };
+
   const handleSyncIssue = async (id: string) => {
     await api.post(`/jira/issues/${id}/sync`);
     await loadData();
+  };
+
+  const handleStartEditIssue = async (issue: LinkedJiraIssue) => {
+    if (editingIssueId === issue.id) {
+      setEditingIssueId(null);
+      return;
+    }
+    setError(null);
+    setMessage(null);
+    setEditingIssueId(issue.id);
+    setEditSummary(issue.summary);
+    setEditDescription('');
+    setEditTransitionId('');
+    try {
+      const res = await api.get<{
+        success: boolean;
+        data: Array<{ id: string; name: string; toStatus: string }>;
+      }>(`/jira/issues/${issue.id}/transitions`);
+      setTransitions(res.data.data);
+    } catch {
+      setTransitions([]);
+    }
+  };
+
+  const handleSaveIssueUpdate = async (issueId: string) => {
+    setSavingIssue(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.patch(`/jira/issues/${issueId}`, {
+        summary: editSummary.trim() || undefined,
+        description: editDescription.trim() ? editDescription : undefined,
+        transitionId: editTransitionId || undefined,
+      });
+      setEditingIssueId(null);
+      setMessage('Jira issue updated directly from TicketSphere.');
+      await loadData();
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          'Failed to update Jira issue'
+      );
+    } finally {
+      setSavingIssue(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-          Integrations
+          Jira Integration
         </p>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
-          Jira Cloud Integration
+          {sectionMeta.title}
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Configure Jira Cloud REST API credentials, browse projects, and monitor linked issue sync.
+          {sectionMeta.subtitle}
         </p>
       </div>
 
@@ -192,9 +297,9 @@ export default function JiraIntegrationPage() {
           Loading Jira integration...
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Connection Config */}
-          {canManage && (
+        <div className={section === 'sync' ? 'grid grid-cols-1 lg:grid-cols-3 gap-6' : 'space-y-6'}>
+          {/* Connection Config (shown on Synchronization tab) */}
+          {section === 'sync' && canManage && (
             <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6 space-y-4 h-fit">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -274,29 +379,113 @@ export default function JiraIntegrationPage() {
                     Jira Projects ({projects.length})
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {projects.map((p) => (
-                      <span
-                        key={p.id}
-                        className="rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-mono text-zinc-700 dark:text-zinc-300"
-                      >
-                        {p.key} — {p.name}
-                      </span>
-                    ))}
+                    {projects.map((p) => {
+                      const active = selectedProjectKey === p.key;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => void handleSelectProject(active ? '' : p.key)}
+                          className={`rounded-md px-2 py-0.5 text-[11px] font-mono transition ${
+                            active
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                          }`}
+                        >
+                          {p.key} — {p.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Linked Issues & Search */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Projects Grid (shown on Jira Projects tab) */}
+          {section === 'projects' && (
             <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                  Connected Jira Spaces ({projects.length})
+                </h2>
+                {selectedProjectKey && (
+                  <button
+                    type="button"
+                    onClick={() => void handleSelectProject('')}
+                    className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Show all spaces
+                  </button>
+                )}
+              </div>
+              {projects.length === 0 ? (
+                <p className="text-xs text-zinc-400">
+                  No Jira projects found. Verify your Jira connection under Synchronization.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {projects.map((p) => {
+                    const active = selectedProjectKey === p.key;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => void handleSelectProject(active ? '' : p.key)}
+                        className={`text-left rounded-xl border p-4 transition ${
+                          active
+                            ? 'border-blue-500 bg-blue-50/60 dark:border-blue-500/60 dark:bg-blue-500/10'
+                            : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-[#111215] dark:hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                            {p.key}
+                          </span>
+                          {p.projectTypeKey && (
+                            <span className="rounded bg-zinc-200/70 dark:bg-zinc-800 px-2 py-0.5 text-[10px] uppercase text-zinc-600 dark:text-zinc-400">
+                              {p.projectTypeKey}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1.5 text-sm font-semibold text-zinc-900 dark:text-white truncate">
+                          {p.name}
+                        </p>
+                        <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                          {active ? 'Filtering issues below (click to clear)' : 'Click to filter issues'}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Linked Issues & Search */}
+          <div className={section === 'sync' ? 'lg:col-span-2 space-y-6' : 'space-y-6'}>
+            {section !== 'sync' && (
+              <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6 space-y-4">
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Search Jira Issues
+                Jira Issues ({searchResults.length})
               </h2>
-              <form onSubmit={handleSearchJira} className="flex gap-2">
+              <form onSubmit={handleSearchJira} className="flex flex-col sm:flex-row gap-2">
+                {projects.length > 0 && (
+                  <select
+                    value={selectedProjectKey}
+                    onChange={(e) => void handleSelectProject(e.target.value)}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-xs dark:text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Spaces ({projects.length})</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.key}>
+                        {p.key} — {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                   <input
                     type="text"
                     value={searchQuery}
@@ -318,9 +507,14 @@ export default function JiraIntegrationPage() {
                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                   {searchResults.map((r) => (
                     <div key={r.jiraKey} className="p-3 flex items-center justify-between gap-3 text-xs">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                        {r.projectKey && (
+                          <span className="rounded bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-mono font-semibold">
+                            {r.projectKey}
+                          </span>
+                        )}
                         <span className="font-mono font-semibold text-blue-500">{r.jiraKey}</span>
-                        <span className="ml-2 text-zinc-800 dark:text-zinc-200">{r.summary}</span>
+                        <span className="text-zinc-800 dark:text-zinc-200">{r.summary}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px]">
@@ -340,7 +534,9 @@ export default function JiraIntegrationPage() {
                 </div>
               )}
             </div>
+            )}
 
+            {section !== 'projects' && (
             <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
                 <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
@@ -354,60 +550,134 @@ export default function JiraIntegrationPage() {
                   </p>
                 ) : (
                   linkedIssues.map((issue) => (
-                    <div key={issue.id} className="p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={issue.issueUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-mono font-bold text-blue-500 hover:underline inline-flex items-center gap-1"
-                          >
-                            {issue.jiraKey}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                          <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px]">
-                            {issue.statusName}
-                          </span>
-                          <span
-                            className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                              issue.syncStatus === 'SYNCED'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                                : 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
-                            }`}
-                          >
-                            {issue.syncStatus}
-                          </span>
-                        </div>
-                        <p className="text-zinc-700 dark:text-zinc-300">{issue.summary}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {issue.tickets.map((t) => (
-                            <Link
-                              key={t.id}
-                              to={`/tickets/${t.id}`}
-                              className="font-mono text-[10px] text-blue-500 hover:underline"
+                    <div key={issue.id} className="p-4 space-y-3 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={issue.issueUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-mono font-bold text-blue-500 hover:underline inline-flex items-center gap-1"
                             >
-                              {t.ticketNumber}
-                            </Link>
-                          ))}
+                              {issue.jiraKey}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px]">
+                              {issue.statusName}
+                            </span>
+                            <span
+                              className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                                issue.syncStatus === 'SYNCED'
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                                  : 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+                              }`}
+                            >
+                              {issue.syncStatus}
+                            </span>
+                          </div>
+                          <p className="text-zinc-700 dark:text-zinc-300">{issue.summary}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {issue.tickets.map((t) => (
+                              <Link
+                                key={t.id}
+                                to={`/tickets/${t.id}`}
+                                className="font-mono text-[10px] text-blue-500 hover:underline"
+                              >
+                                {t.ticketNumber}
+                              </Link>
+                            ))}
+                          </div>
                         </div>
+
+                        {canManage && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleStartEditIssue(issue)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 px-2.5 py-1.5 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20"
+                            >
+                              {editingIssueId === issue.id ? 'Close' : 'Update in Jira'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleSyncIssue(issue.id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              Sync
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={() => void handleSyncIssue(issue.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                          Sync
-                        </button>
+                      {canManage && editingIssueId === issue.id && (
+                        <div className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] p-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <div>
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={editTransitionId}
+                              onChange={(e) => setEditTransitionId(e.target.value)}
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            >
+                              <option value="">Keep ({issue.statusName})</option>
+                              {transitions.map((tr) => (
+                                <option key={tr.id} value={tr.id}>
+                                  {tr.toStatus}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Summary
+                            </label>
+                            <input
+                              type="text"
+                              value={editSummary}
+                              onChange={(e) => setEditSummary(e.target.value)}
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Description (optional)
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              placeholder="Leave blank to keep existing description"
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            />
+                          </div>
+                          <div className="sm:col-span-3 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingIssueId(null)}
+                              className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              disabled={savingIssue}
+                              onClick={() => void handleSaveIssueUpdate(issue.id)}
+                              className="rounded-lg bg-blue-600 hover:bg-blue-500 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                            >
+                              {savingIssue ? 'Saving...' : 'Save to Jira'}
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))
                 )}
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

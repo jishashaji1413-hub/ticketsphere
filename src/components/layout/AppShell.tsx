@@ -38,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -333,6 +334,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </button>
+            <div className="sm:hidden text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+              {activeLabel}
+            </div>
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 truncate">
               <span>TicketSphere</span>
               <span>/</span>
@@ -342,7 +346,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen((s) => !s)}
+              className="md:hidden h-8 w-8 flex items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-[#181A1F] dark:text-zinc-400"
+              title="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
             <form onSubmit={handleGlobalSearch} className="relative hidden md:block w-64 lg:w-72">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
               <input
@@ -350,7 +362,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="text"
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
-                placeholder="Search tickets, TS-1001..."
+                placeholder="Search tickets, TS-001..."
                 className="w-full rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-12 py-1.5 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white dark:border-zinc-800 dark:bg-[#111215] dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-[#111215] dark:focus:border-blue-500 focus:outline-none transition"
               />
               <span className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded border border-zinc-200 bg-white px-1 py-0.5 text-[10px] font-mono text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800">
@@ -380,7 +392,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40 overflow-hidden">
+                <div className="animate-fade-in fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto mt-2 sm:w-80 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40 overflow-hidden">
                   <div className="px-3.5 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                       Notifications ({unreadCount} unread)
@@ -452,7 +464,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40">
+                <div className="animate-fade-in absolute right-0 mt-2 w-52 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40">
                   <div className="px-3.5 py-2 border-b border-zinc-100 dark:border-zinc-800">
                     <p className="text-xs font-semibold text-zinc-900 dark:text-white truncate">
                       {user?.displayName}
@@ -483,7 +495,34 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">{children}</main>
+        {mobileSearchOpen && (
+          <form
+            onSubmit={(e) => {
+              handleGlobalSearch(e);
+              setMobileSearchOpen(false);
+            }}
+            className="md:hidden px-4 py-2.5 bg-white dark:bg-[#16181D] border-b border-zinc-200 dark:border-zinc-800"
+          >
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+              <input
+                type="text"
+                autoFocus
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                placeholder="Search tickets, TS-001..."
+                className="w-full rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 py-1.5 text-xs text-zinc-800 dark:border-zinc-800 dark:bg-[#111215] dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+          </form>
+        )}
+
+        <main
+          key={location.pathname}
+          className="animate-fade-up relative z-10 flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

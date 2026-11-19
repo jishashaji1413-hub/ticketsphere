@@ -142,7 +142,7 @@ export default function UserManagementPage() {
       <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden shadow-2xs">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" />
             <input
               type="text"
               value={search}

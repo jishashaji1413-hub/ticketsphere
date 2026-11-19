@@ -48,6 +48,14 @@ export default function TicketDetailPage() {
   const [jiraProjectKey, setJiraProjectKey] = useState('');
   const [creatingJira, setCreatingJira] = useState(false);
   const [jiraError, setJiraError] = useState<string | null>(null);
+  const [editingJira, setEditingJira] = useState(false);
+  const [jiraTransitions, setJiraTransitions] = useState<
+    Array<{ id: string; name: string; toStatus: string }>
+  >([]);
+  const [jiraEditSummary, setJiraEditSummary] = useState('');
+  const [jiraEditDescription, setJiraEditDescription] = useState('');
+  const [jiraTransitionId, setJiraTransitionId] = useState('');
+  const [savingJiraUpdate, setSavingJiraUpdate] = useState(false);
 
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -655,19 +663,133 @@ export default function TicketDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Jira Issue</span>
                 {ticket.jiraIssue ? (
-                  <a
-                    href={ticket.jiraIssue.issueUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-mono text-blue-500 hover:underline"
-                  >
-                    {ticket.jiraIssue.jiraKey} ({ticket.jiraIssue.statusName})
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={ticket.jiraIssue.issueUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-mono text-blue-500 hover:underline"
+                    >
+                      {ticket.jiraIssue.jiraKey} ({ticket.jiraIssue.statusName})
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {canManageJira && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!editingJira && ticket.jiraIssue) {
+                            setJiraError(null);
+                            setJiraEditSummary(
+                              (ticket.jiraIssue as { summary?: string }).summary || ticket.title
+                            );
+                            setJiraEditDescription('');
+                            setJiraTransitionId('');
+                            try {
+                              const res = await api.get<{
+                                success: boolean;
+                                data: Array<{ id: string; name: string; toStatus: string }>;
+                              }>(`/jira/issues/${ticket.jiraIssue.id}/transitions`);
+                              setJiraTransitions(res.data.data);
+                            } catch {
+                              setJiraTransitions([]);
+                            }
+                          }
+                          setEditingJira((v) => !v);
+                        }}
+                        className="text-[11px] font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {editingJira ? 'Close' : 'Update'}
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <span className="text-zinc-500">Not linked</span>
                 )}
               </div>
+              {canManageJira && ticket.jiraIssue && editingJira && (
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 space-y-2 dark:border-zinc-800 dark:bg-[#111215]">
+                  {jiraError && <p className="text-[11px] text-rose-500">{jiraError}</p>}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                      Jira Status
+                    </label>
+                    <select
+                      value={jiraTransitionId}
+                      onChange={(e) => setJiraTransitionId(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1 text-xs dark:text-white focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="">Keep ({ticket.jiraIssue.statusName})</option>
+                      {jiraTransitions.map((tr) => (
+                        <option key={tr.id} value={tr.id}>
+                          {tr.toStatus}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                      Jira Summary
+                    </label>
+                    <input
+                      type="text"
+                      value={jiraEditSummary}
+                      onChange={(e) => setJiraEditSummary(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1 text-xs dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                      Jira Description (optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={jiraEditDescription}
+                      onChange={(e) => setJiraEditDescription(e.target.value)}
+                      placeholder="Leave blank to keep existing description"
+                      className="w-full rounded-lg border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1 text-xs dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingJira(false)}
+                      className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingJiraUpdate}
+                      onClick={async () => {
+                        if (!ticket.jiraIssue) return;
+                        setSavingJiraUpdate(true);
+                        setJiraError(null);
+                        try {
+                          await api.patch(`/jira/issues/${ticket.jiraIssue.id}`, {
+                            summary: jiraEditSummary.trim() || undefined,
+                            description: jiraEditDescription.trim()
+                              ? jiraEditDescription
+                              : undefined,
+                            transitionId: jiraTransitionId || undefined,
+                          });
+                          setEditingJira(false);
+                          await loadTicket();
+                        } catch (err: unknown) {
+                          setJiraError(
+                            (err as { response?: { data?: { message?: string } } })?.response?.data
+                              ?.message || 'Failed to update Jira issue'
+                          );
+                        } finally {
+                          setSavingJiraUpdate(false);
+                        }
+                      }}
+                      className="rounded-lg bg-blue-600 hover:bg-blue-500 px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                    >
+                      {savingJiraUpdate ? 'Updating...' : 'Save to Jira'}
+                    </button>
+                  </div>
+                </div>
+              )}
               {canManageJira && !ticket.jiraIssue && (
                 <div className="space-y-2 pt-1">
                   {jiraError && <p className="text-[11px] text-rose-500">{jiraError}</p>}

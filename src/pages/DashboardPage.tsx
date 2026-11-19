@@ -137,12 +137,13 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3.5">
-        {kpiCards.map((card) => {
+        {kpiCards.map((card, idx) => {
           const Icon = card.icon;
           return (
             <div
               key={card.label}
-              className="rounded-lg border border-zinc-200/90 bg-gradient-to-b from-white to-zinc-50/60 dark:border-zinc-800/90 dark:from-[#181A1F] dark:to-[#14161B] p-4 shadow-2xs"
+              style={{ animationDelay: `${idx * 40}ms` }}
+              className="animate-fade-up ts-card-hover rounded-lg border border-zinc-200/90 bg-gradient-to-b from-white to-zinc-50/60 dark:border-zinc-800/90 dark:from-[#181A1F] dark:to-[#14161B] p-4 shadow-2xs hover:border-blue-500/40"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">

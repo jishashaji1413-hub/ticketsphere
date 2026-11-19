@@ -9,8 +9,10 @@ import {
   MessageSquare,
   Paperclip,
   Plus,
+  RotateCcw,
   Search,
   Table2,
+  Trash2,
   User as UserIcon,
 } from 'lucide-react';
 import { api } from '../../lib/api';
@@ -45,6 +47,9 @@ export default function TicketsListPage({
   const { user, hasPermission } = useAuth();
   const canCreate = hasPermission('tickets.create');
   const canUpdate = hasPermission('tickets.update');
+  const canDelete = hasPermission('tickets.delete');
+
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const [displayMode, setDisplayMode] = useState<'table' | 'kanban'>('table');
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
@@ -86,7 +91,7 @@ export default function TicketsListPage({
         };
       }>('/tickets', {
         params: {
-          view: defaultView,
+          view: showDeleted ? 'deleted' : defaultView,
           search: search || undefined,
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
@@ -108,6 +113,7 @@ export default function TicketsListPage({
     }
   }, [
     defaultView,
+    showDeleted,
     search,
     statusFilter,
     priorityFilter,
@@ -157,6 +163,17 @@ export default function TicketsListPage({
     await loadTickets();
   };
 
+  const handleDeleteTicket = async (t: TicketSummary) => {
+    if (!window.confirm(`Delete ticket ${t.ticketNumber}?`)) return;
+    await api.delete(`/tickets/${t.id}`);
+    await loadTickets();
+  };
+
+  const handleRestoreTicket = async (t: TicketSummary) => {
+    await api.post(`/tickets/${t.id}/restore`);
+    await loadTickets();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
@@ -172,7 +189,24 @@ export default function TicketsListPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeleted((d) => !d);
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                showDeleted
+                  ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-300'
+                  : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-[#181A1F] dark:text-zinc-300 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {showDeleted ? 'Viewing Deleted' : 'Deleted'}
+            </button>
+          )}
           <div className="inline-flex rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-1">
             <button
               type="button"
@@ -212,9 +246,9 @@ export default function TicketsListPage({
       </div>
 
       {/* Filters Bar */}
-      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3">
+        <div className="relative sm:col-span-2 lg:flex-1 lg:min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <input
             type="text"
             value={search}
@@ -222,7 +256,7 @@ export default function TicketsListPage({
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search TS-1001, title, description..."
+            placeholder="Search TS-001, title, description..."
             className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] pl-9 pr-3 py-1.5 text-sm dark:text-white placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none"
           />
         </div>
@@ -340,7 +374,69 @@ export default function TicketsListPage({
         </div>
       ) : displayMode === 'table' ? (
         <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
+          {/* Mobile Card List */}
+          <div className="sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+            {tickets.length === 0 ? (
+              <p className="px-4 py-10 text-center text-xs text-zinc-400">
+                No tickets match your current filters.
+              </p>
+            ) : (
+              tickets.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-4 space-y-2 hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      to={`/tickets/${t.id}`}
+                      className="font-mono text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      {t.ticketNumber}
+                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <PriorityBadge priority={t.priority} />
+                      <StatusBadge status={t.status} />
+                      {canDelete && (
+                        showDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleRestoreTicket(t)}
+                            title="Restore ticket"
+                            className="p-1 rounded text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteTicket(t)}
+                            title="Delete ticket"
+                            className="p-1 rounded text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                  <Link
+                    to={`/tickets/${t.id}`}
+                    className="block text-sm font-medium text-zinc-900 dark:text-white line-clamp-2"
+                  >
+                    {t.title}
+                  </Link>
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                    <span className="truncate">
+                      {t.assignee ? t.assignee.displayName : 'Unassigned'}
+                    </span>
+                    <span>{new Date(t.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-zinc-50 text-zinc-500 border-b border-zinc-200 dark:bg-[#16181D] text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400 dark:border-zinc-800">
                 <tr>
@@ -374,12 +470,13 @@ export default function TicketsListPage({
                       Created <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
+                  {canDelete && <th className="px-5 py-3.5 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80">
                 {tickets.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-zinc-400">
+                    <td colSpan={canDelete ? 7 : 6} className="px-5 py-12 text-center text-zinc-400">
                       No tickets match your current filters.
                     </td>
                   </tr>
@@ -438,6 +535,30 @@ export default function TicketsListPage({
                       <td className="px-5 py-3.5 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
                         {new Date(t.createdAt).toLocaleDateString()}
                       </td>
+                      {canDelete && (
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                          {showDeleted ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleRestoreTicket(t)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Restore
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteTicket(t)}
+                              title="Delete ticket"
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Delete
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -473,13 +594,13 @@ export default function TicketsListPage({
         </div>
       ) : (
         /* Kanban Board View */
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="flex overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-5 gap-4">
           {ALL_STATUSES.map((colStatus) => {
             const colTickets = tickets.filter((t) => t.status === colStatus);
             return (
               <div
                 key={colStatus}
-                className="rounded-lg border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#16181D] p-3 flex flex-col gap-3 min-h-[340px]"
+                className="min-w-[270px] sm:min-w-[290px] lg:min-w-0 snap-start rounded-lg border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#16181D] p-3 flex flex-col gap-3 min-h-[340px]"
               >
                 <div className="flex items-center justify-between px-1">
                   <StatusBadge status={colStatus} />
