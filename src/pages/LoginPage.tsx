@@ -9,7 +9,6 @@ import {
   Lock,
   Mail,
   ShieldCheck,
-  Sparkles,
   User,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -93,149 +92,124 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-12 bg-[#F4F6FA] text-slate-900 dark:bg-[#090D16] dark:text-slate-100 transition-colors">
-      {/* Left Architectural Showcase Panel */}
-      <div className="hidden lg:flex lg:col-span-6 relative flex-col justify-between bg-[#0B1120] text-white p-10 xl:p-14 border-r border-slate-200 dark:border-slate-800/80 overflow-hidden">
-        <div className="absolute inset-0 bg-arch-grid opacity-70 pointer-events-none" />
-        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-950/60 ring-1 ring-white/15">
-            <Layers className="h-5 w-5 text-white" />
+    <div className="min-h-screen grid lg:grid-cols-12 bg-[#F6F7F9] text-zinc-900 dark:bg-[#111215] dark:text-zinc-100 transition-colors">
+      {/* Left Architectural Editorial Panel */}
+      <div className="hidden lg:flex lg:col-span-5 relative flex-col justify-between bg-gradient-to-br from-[#16181D] via-[#151A26] to-[#111318] text-zinc-100 p-10 xl:p-12 border-r border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-md bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-xs">
+            <Layers className="h-4 w-4" />
           </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-white">TicketSphere</span>
-            <span className="ml-2 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-300 ring-1 ring-indigo-400/25">
-              Enterprise
-            </span>
-          </div>
+          <span className="text-base font-semibold tracking-tight text-white">TicketSphere</span>
         </div>
 
-        <div className="relative z-10 max-w-lg space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300 ring-1 ring-indigo-400/20">
-              <Sparkles className="h-3.5 w-3.5" />
-              IT Service Management &amp; Support Operations
-            </div>
-            <h1 className="text-3xl xl:text-4xl font-bold tracking-tight leading-[1.15] text-white">
-              Resolve incidents faster with Outlook &amp; Jira in one command center.
+        <div className="max-w-md space-y-6">
+          <div className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+              IT Service Management
+            </p>
+            <h1 className="text-2xl xl:text-3xl font-semibold tracking-tight leading-snug text-white">
+              Structured incident tracking, Outlook mail sync, and Jira escalation.
             </h1>
-            <p className="text-sm xl:text-base text-slate-400 leading-relaxed">
-              Built for modern IT teams. Turn incoming Outlook threads into tracked tickets,
-              escalate to Jira Cloud engineering, and govern access with dynamic RBAC.
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Built for CFSS &amp; Asset Management operations with role-based permissions and
+              complete audit history.
             </p>
           </div>
 
-          <div className="grid gap-3.5">
-            <div className="flex items-start gap-3.5 rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/10">
-              <div className="h-8 w-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-                <Mail className="h-4 w-4" />
-              </div>
+          <div className="space-y-3 pt-2 border-t border-zinc-800">
+            <div className="flex items-start gap-3 py-2">
+              <Mail className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-white">Microsoft Graph Outlook Sync</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Ingest mailbox threads, prevent duplicates, and reply directly from ticket timelines.
+                <p className="text-xs font-semibold text-zinc-200">Microsoft Graph Outlook</p>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Sync mailbox threads and convert selected emails into tickets.
                 </p>
               </div>
             </div>
-
-            <div className="flex items-start gap-3.5 rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/10">
-              <div className="h-8 w-8 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
-                <GitBranch className="h-4 w-4" />
-              </div>
+            <div className="flex items-start gap-3 py-2">
+              <GitBranch className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-white">Jira Cloud Issue Linking</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Link or create Jira issues with live sync status and independent workflow rules.
+                <p className="text-xs font-semibold text-zinc-200">Jira Cloud Integration</p>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Link or escalate engineering issues with independent status sync.
                 </p>
               </div>
             </div>
-
-            <div className="flex items-start gap-3.5 rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/10">
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
+            <div className="flex items-start gap-3 py-2">
+              <ShieldCheck className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-white">Dynamic Modules &amp; RBAC</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Database-driven navigation, granular role permissions, and full audit trails.
+                <p className="text-xs font-semibold text-zinc-200">Dynamic RBAC &amp; Modules</p>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Database-driven menus, project hierarchies, and audit logs.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-white/10 pt-6">
-          <span>TicketSphere ITSM Platform</span>
-          {/* <span className="font-mono">PostgreSQL • Prisma • Microsoft Graph</span> */}
+        <div className="text-xs text-zinc-500 border-t border-zinc-800 pt-5">
+          TicketSphere Platform
         </div>
       </div>
 
       {/* Right Authentication Form Panel */}
-      <div className="lg:col-span-6 flex items-center justify-center p-6 sm:p-10 relative overflow-hidden">
-        <div className="absolute top-5 right-5 z-20">
+      <div className="lg:col-span-7 flex items-center justify-center p-6 sm:p-10 relative">
+        <div className="absolute top-5 right-5">
           <ThemeToggle />
         </div>
-        <div className="hidden dark:block absolute top-1/4 right-1/4 h-72 w-72 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-[430px] relative z-10">
+        <div className="w-full max-w-[400px]">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white">
-              <Layers className="h-5 w-5" />
+            <div className="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center text-white">
+              <Layers className="h-4 w-4" />
             </div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white">TicketSphere</span>
+            <span className="text-base font-semibold text-zinc-900 dark:text-white">
+              TicketSphere
+            </span>
           </div>
 
-          <div className="rounded-2xl bg-white border border-slate-200/90 shadow-lg dark:bg-[#111827]/90 dark:backdrop-blur-xl dark:border-slate-800 dark:shadow-2xl p-7 sm:p-8">
+          <div className="rounded-lg bg-white border border-zinc-200 shadow-xs dark:bg-[#181A1F] dark:border-zinc-800 p-7">
             <div className="mb-6">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
                 {needsInitialAdmin
                   ? 'Initialize Workspace'
                   : mode === 'register'
-                    ? 'Create your account'
-                    : 'Sign in to workspace'}
+                    ? 'Create account'
+                    : 'Sign in'}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 {needsInitialAdmin
-                  ? 'Set up the primary Administrator account to get started.'
+                  ? 'Set up the primary Administrator account.'
                   : mode === 'register'
                     ? 'Register with your work email to submit and track tickets.'
-                    : 'Enter your credentials or continue with Microsoft Entra ID.'}
+                    : 'Enter your credentials or sign in with Microsoft.'}
               </p>
             </div>
 
             {loadingConfig ? (
-              <div className="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400 gap-2 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin text-indigo-600 dark:text-indigo-400" />
-                <span>Checking workspace configuration...</span>
+              <div className="flex items-center justify-center py-10 text-zinc-500 dark:text-zinc-400 gap-2 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                <span>Loading...</span>
               </div>
             ) : (
               <>
                 {needsInitialAdmin ? (
-                  <div className="mb-5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-950 dark:border-indigo-500/30 dark:bg-indigo-500/10 p-3.5 text-xs dark:text-indigo-200 flex gap-2.5">
-                    <ShieldCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                    <div>
-                      <p className="font-semibold text-indigo-950 dark:text-white">
-                        First-Time Bootstrap
-                      </p>
-                      <p className="text-indigo-700 dark:text-indigo-300 mt-0.5">
-                        This one-time account receives full Administrator permissions.
-                      </p>
-                    </div>
+                  <div className="mb-5 rounded-md border border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 p-3 text-xs dark:text-blue-200 flex gap-2.5">
+                    <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <span>First-time setup: this account receives Administrator access.</span>
                   </div>
                 ) : (
-                  <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 border border-slate-200 dark:bg-[#090D16] p-1 dark:border-slate-800 text-xs font-semibold">
+                  <div className="mb-5 grid grid-cols-2 rounded-md bg-zinc-100 border border-zinc-200 dark:bg-[#111215] p-0.5 dark:border-zinc-800 text-xs font-medium">
                     <button
                       type="button"
                       onClick={() => {
                         setMode('login');
                         setError(null);
                       }}
-                      className={`rounded-lg py-2 transition ${
+                      className={`rounded py-1.5 transition ${
                         mode === 'login'
-                          ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                          ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
                       }`}
                     >
                       Sign In
@@ -246,10 +220,10 @@ export default function LoginPage() {
                         setMode('register');
                         setError(null);
                       }}
-                      className={`rounded-lg py-2 transition ${
+                      className={`rounded py-1.5 transition ${
                         mode === 'register'
-                          ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                          ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
                       }`}
                     >
                       Create Account
@@ -258,55 +232,55 @@ export default function LoginPage() {
                 )}
 
                 {error && (
-                  <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 p-3.5 text-xs dark:text-rose-300 flex items-start gap-2.5">
-                    <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 p-3 text-xs dark:text-rose-300 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
                   {(needsInitialAdmin || mode === 'register') && (
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                         Full Name
                       </label>
                       <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                        <User className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
                         <input
                           type="text"
                           required
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
                           placeholder="Alex Morgan"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] dark:text-white dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition"
+                          className="w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-[#111215] dark:text-white dark:placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none transition"
                         />
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Work Email
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                      <Mail className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@company.com"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] dark:text-white dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition"
+                        className="w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-[#111215] dark:text-white dark:placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                      <Lock className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
                       <input
                         type="password"
                         required
@@ -318,7 +292,7 @@ export default function LoginPage() {
                             ? 'Minimum 8 characters'
                             : 'Enter your password'
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] dark:text-white dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition"
+                        className="w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-[#111215] dark:text-white dark:placeholder:text-zinc-500 focus:border-blue-600 focus:outline-none transition"
                       />
                     </div>
                   </div>
@@ -326,7 +300,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500 disabled:opacity-60 transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/20 dark:shadow-indigo-950/50"
+                    className="w-full rounded-md bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 transition flex items-center justify-center gap-2 shadow-xs"
                   >
                     {submitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -347,18 +321,16 @@ export default function LoginPage() {
 
                 {!needsInitialAdmin && (
                   <>
-                    <div className="my-6 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Single Sign-On
-                      </span>
-                      <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                    <div className="my-5 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                      <span className="text-[11px] uppercase tracking-wider text-zinc-400">or</span>
+                      <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
                     </div>
 
                     <button
                       type="button"
                       onClick={handleMicrosoftSignIn}
-                      className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700/80 dark:bg-[#090D16] px-4 py-2.5 text-sm font-medium dark:text-slate-200 dark:hover:bg-slate-800/70 dark:hover:border-slate-600 transition flex items-center justify-center gap-2.5"
+                      className="w-full rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-[#111215] px-4 py-2 text-sm font-medium dark:text-zinc-200 dark:hover:bg-zinc-800 transition flex items-center justify-center gap-2.5"
                     >
                       <svg className="h-4 w-4" viewBox="0 0 21 21" fill="none">
                         <rect x="1" y="1" width="9" height="9" fill="#F25022" />
@@ -369,11 +341,9 @@ export default function LoginPage() {
                       Continue with Microsoft Outlook
                     </button>
                     {!microsoftEnabled && (
-                      <p className="mt-2.5 text-center text-[11px] text-slate-400 dark:text-slate-500">
-                        Add <code className="font-mono text-slate-500 dark:text-slate-400">AZURE_*</code>{' '}
-                        keys in{' '}
-                        <code className="font-mono text-slate-500 dark:text-slate-400">backend/.env</code>{' '}
-                        to enable Entra ID
+                      <p className="mt-2.5 text-center text-[11px] text-zinc-400">
+                        Configure <code className="font-mono">AZURE_*</code> in{' '}
+                        <code className="font-mono">backend/.env</code> for Entra ID
                       </p>
                     )}
                   </>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -52,7 +52,15 @@ export default function TicketsListPage({
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch !== null) {
+      setSearch(urlSearch);
+    }
+  }, [searchParams]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [projectFilter, setProjectFilter] = useState<string>('');
@@ -151,29 +159,28 @@ export default function TicketsListPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
             Ticket Management
           </p>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
             {title}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             {subtitle} • <span className="font-mono">{total}</span> total
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-1">
+          <div className="inline-flex rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-1">
             <button
               type="button"
               onClick={() => setDisplayMode('table')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                displayMode === 'table'
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${displayMode === 'table'
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white'
+                }`}
             >
               <Table2 className="h-3.5 w-3.5" />
               Table
@@ -181,14 +188,13 @@ export default function TicketsListPage({
             <button
               type="button"
               onClick={() => setDisplayMode('kanban')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                displayMode === 'kanban'
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${displayMode === 'kanban'
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white'
+                }`}
             >
               <Kanban className="h-3.5 w-3.5" />
-              Kanban
+              Status
             </button>
           </div>
 
@@ -196,7 +202,7 @@ export default function TicketsListPage({
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500 transition shadow-md shadow-indigo-950/20 dark:shadow-indigo-950/50"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 hover:to-sky-500 transition shadow-xs"
             >
               <Plus className="h-4 w-4" />
               New Ticket
@@ -206,9 +212,9 @@ export default function TicketsListPage({
       </div>
 
       {/* Filters Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-4 flex flex-wrap items-center gap-3">
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400" />
           <input
             type="text"
             value={search}
@@ -217,7 +223,7 @@ export default function TicketsListPage({
               setPage(1);
             }}
             placeholder="Search TS-1001, title, description..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] pl-9 pr-3 py-1.5 text-sm dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] pl-9 pr-3 py-1.5 text-sm dark:text-white placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
@@ -227,7 +233,7 @@ export default function TicketsListPage({
             setStatusFilter(e.target.value);
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Statuses</option>
           {ALL_STATUSES.map((s) => (
@@ -243,7 +249,7 @@ export default function TicketsListPage({
             setPriorityFilter(e.target.value);
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Priorities</option>
           {ALL_PRIORITIES.map((p) => (
@@ -261,7 +267,7 @@ export default function TicketsListPage({
             setSubmoduleFilter('');
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Projects</option>
           {Array.from(
@@ -280,7 +286,7 @@ export default function TicketsListPage({
             setSubmoduleFilter('');
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Modules</option>
           {(projectFilter ? modules.filter((m) => m.projectName === projectFilter) : modules).map(
@@ -299,7 +305,7 @@ export default function TicketsListPage({
             setSubmoduleFilter(e.target.value);
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 disabled:opacity-50 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Submodules</option>
           {(modules.find((m) => m.id === moduleFilter)?.submodules ?? []).map((s) => (
@@ -315,7 +321,7 @@ export default function TicketsListPage({
             setAssigneeFilter(e.target.value);
             setPage(1);
           }}
-          className="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-[#090D16] px-3 py-1.5 text-xs font-medium dark:text-slate-200 focus:border-indigo-500 focus:outline-none"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
         >
           <option value="">All Assignees</option>
           {users.map((u) => (
@@ -328,15 +334,15 @@ export default function TicketsListPage({
 
       {/* Content */}
       {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-12 text-center text-slate-500 dark:text-slate-400">
-          <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-indigo-600 dark:text-indigo-400" />
+        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-12 text-center text-zinc-500 dark:text-zinc-400">
+          <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-blue-600 dark:text-blue-400" />
           Loading tickets...
         </div>
       ) : displayMode === 'table' ? (
-        <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] overflow-hidden shadow-2xs">
+        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 dark:bg-[#0D1321] text-[11px] font-semibold uppercase tracking-wider dark:text-slate-400 dark:border-slate-800">
+              <thead className="bg-zinc-50 text-zinc-500 border-b border-zinc-200 dark:bg-[#16181D] text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400 dark:border-zinc-800">
                 <tr>
                   <th className="px-5 py-3.5">Key</th>
                   <th className="px-5 py-3.5">Title &amp; Module</th>
@@ -344,7 +350,7 @@ export default function TicketsListPage({
                     <button
                       type="button"
                       onClick={() => handleSort('status')}
-                      className="inline-flex items-center gap-1 hover:text-slate-800 dark:hover:text-white"
+                      className="inline-flex items-center gap-1 hover:text-zinc-800 dark:hover:text-white"
                     >
                       Status <ArrowUpDown className="h-3 w-3" />
                     </button>
@@ -353,7 +359,7 @@ export default function TicketsListPage({
                     <button
                       type="button"
                       onClick={() => handleSort('priority')}
-                      className="inline-flex items-center gap-1 hover:text-slate-800 dark:hover:text-white"
+                      className="inline-flex items-center gap-1 hover:text-zinc-800 dark:hover:text-white"
                     >
                       Priority <ArrowUpDown className="h-3 w-3" />
                     </button>
@@ -363,17 +369,17 @@ export default function TicketsListPage({
                     <button
                       type="button"
                       onClick={() => handleSort('createdAt')}
-                      className="inline-flex items-center gap-1 hover:text-slate-800 dark:hover:text-white"
+                      className="inline-flex items-center gap-1 hover:text-zinc-800 dark:hover:text-white"
                     >
                       Created <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80">
                 {tickets.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-5 py-12 text-center text-zinc-400">
                       No tickets match your current filters.
                     </td>
                   </tr>
@@ -381,12 +387,12 @@ export default function TicketsListPage({
                   tickets.map((t) => (
                     <tr
                       key={t.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition"
+                      className="hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] transition"
                     >
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <Link
                           to={`/tickets/${t.id}`}
-                          className="font-mono text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                          className="font-mono text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {t.ticketNumber}
                         </Link>
@@ -394,13 +400,13 @@ export default function TicketsListPage({
                       <td className="px-5 py-3.5 max-w-md">
                         <Link
                           to={`/tickets/${t.id}`}
-                          className="font-medium text-slate-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300 line-clamp-1"
+                          className="font-medium text-zinc-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-300 line-clamp-1"
                         >
                           {t.title}
                         </Link>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400">
                           {t.module?.projectName && (
-                            <span className="font-medium text-indigo-500 dark:text-indigo-400">
+                            <span className="font-medium text-blue-500 dark:text-blue-400">
                               {t.module.projectName} /
                             </span>
                           )}
@@ -421,15 +427,15 @@ export default function TicketsListPage({
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-xs">
                         {t.assignee ? (
-                          <span className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
-                            <UserIcon className="h-3.5 w-3.5 text-indigo-500" />
+                          <span className="inline-flex items-center gap-1.5 text-zinc-700 dark:text-zinc-200">
+                            <UserIcon className="h-3.5 w-3.5 text-blue-500" />
                             {t.assignee.displayName}
                           </span>
                         ) : (
-                          <span className="text-slate-400 italic">Unassigned</span>
+                          <span className="text-zinc-400 italic">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
                         {new Date(t.createdAt).toLocaleDateString()}
                       </td>
                     </tr>
@@ -440,7 +446,7 @@ export default function TicketsListPage({
           </div>
 
           {totalPages > 1 && (
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+            <div className="px-5 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
               <span>
                 Page {page} of {totalPages}
               </span>
@@ -449,7 +455,7 @@ export default function TicketsListPage({
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 disabled:opacity-40"
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -457,7 +463,7 @@ export default function TicketsListPage({
                   type="button"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 disabled:opacity-40"
+                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-40"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -473,23 +479,23 @@ export default function TicketsListPage({
             return (
               <div
                 key={colStatus}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-[#0D1321] p-3 flex flex-col gap-3 min-h-[340px]"
+                className="rounded-lg border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#16181D] p-3 flex flex-col gap-3 min-h-[340px]"
               >
                 <div className="flex items-center justify-between px-1">
                   <StatusBadge status={colStatus} />
-                  <span className="text-xs font-mono text-slate-400">{colTickets.length}</span>
+                  <span className="text-xs font-mono text-zinc-400">{colTickets.length}</span>
                 </div>
 
                 <div className="space-y-2.5 flex-1">
                   {colTickets.map((t) => (
                     <div
                       key={t.id}
-                      className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-3.5 space-y-2.5 shadow-2xs"
+                      className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-3.5 space-y-2.5 shadow-2xs"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <Link
                           to={`/tickets/${t.id}`}
-                          className="font-mono text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="font-mono text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {t.ticketNumber}
                         </Link>
@@ -497,11 +503,11 @@ export default function TicketsListPage({
                       </div>
                       <Link
                         to={`/tickets/${t.id}`}
-                        className="block text-xs font-semibold text-slate-900 dark:text-white hover:text-indigo-500 line-clamp-2"
+                        className="block text-xs font-semibold text-zinc-900 dark:text-white hover:text-blue-500 line-clamp-2"
                       >
                         {t.title}
                       </Link>
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400">
                         <span className="truncate">
                           {t.assignee ? t.assignee.displayName : 'Unassigned'}
                         </span>
@@ -519,20 +525,20 @@ export default function TicketsListPage({
                       {(canUpdate ||
                         t.assignee?.id === user?.id ||
                         t.reporter.id === user?.id) && (
-                        <select
-                          value={t.status}
-                          onChange={(e) =>
-                            void handleQuickStatusChange(t.id, e.target.value as TicketStatus)
-                          }
-                          className="w-full rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#090D16] px-2 py-1 text-[11px] text-slate-700 dark:text-slate-300 focus:outline-none"
-                        >
-                          {ALL_STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              Move to: {STATUS_LABELS[s]}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                          <select
+                            value={t.status}
+                            onChange={(e) =>
+                              void handleQuickStatusChange(t.id, e.target.value as TicketStatus)
+                            }
+                            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                          >
+                            {ALL_STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                Move to: {STATUS_LABELS[s]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                     </div>
                   ))}
                 </div>

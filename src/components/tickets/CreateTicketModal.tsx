@@ -99,15 +99,15 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 dark:bg-[#111827] dark:border-slate-800 shadow-2xl p-6 my-8">
+      <div className="w-full max-w-2xl rounded-lg bg-white border border-zinc-200 dark:bg-[#181A1F] dark:border-zinc-800 shadow-2xl p-6 my-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
             Create Support Ticket
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -121,7 +121,7 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
               Ticket Title
             </label>
             <input
@@ -131,12 +131,12 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Unable to access VPN from remote network"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3.5 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3.5 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
               Detailed Description
             </label>
             <textarea
@@ -145,13 +145,13 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the issue, steps to reproduce, and impact..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3.5 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3.5 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Category
               </label>
               <input
@@ -159,17 +159,17 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
                 required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 {ALL_PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -180,7 +180,7 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Project
               </label>
               <select
@@ -190,7 +190,7 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
                   setModuleId('');
                   setSubmoduleId('');
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 <option value="">All Projects</option>
                 {projectOptions.map((proj) => (
@@ -202,7 +202,7 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Module {projectName ? `(${filteredModules.length})` : ''}
               </label>
               <select
@@ -211,7 +211,7 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
                   setModuleId(e.target.value);
                   setSubmoduleId('');
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 <option value="">Select Module (Optional)</option>
                 {filteredModules.map((m) => (
@@ -223,14 +223,14 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Submodule {moduleId ? `(${submodules.length} available)` : ''}
               </label>
               <select
                 value={submoduleId}
                 disabled={!moduleId || submodules.length === 0}
                 onChange={(e) => setSubmoduleId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 disabled:opacity-50 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 disabled:opacity-50 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 <option value="">
                   {!moduleId
@@ -249,13 +249,13 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
 
             {canAssign && (
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                   Assignee
                 </label>
                 <select
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                 >
                   <option value="">Unassigned</option>
                   {users.map((u) => (
@@ -268,14 +268,14 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
             )}
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                 Due Date
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
           </div>
@@ -284,14 +284,14 @@ export function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModa
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 px-4 py-2 text-sm font-medium dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 px-4 py-2 text-sm font-medium dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500 disabled:opacity-60 inline-flex items-center gap-2"
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 hover:to-sky-500 disabled:opacity-60 inline-flex items-center gap-2"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Create Ticket

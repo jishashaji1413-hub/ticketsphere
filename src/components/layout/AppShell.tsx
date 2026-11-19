@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
+  CheckCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -14,10 +15,20 @@ import {
   User as UserIcon,
   X,
 } from 'lucide-react';
+import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { DynamicIcon } from '../../utils/iconMap';
 import { ThemeToggle } from '../ThemeToggle';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  link: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -28,9 +39,68 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [expandedModuleIds, setExpandedModuleIds] = useState<Record<string, boolean>>({});
 
-  // Auto-expand the module matching the current route
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get<{
+        success: boolean;
+        data: { items: NotificationItem[]; unreadCount: number };
+      }>('/notifications');
+      setNotifications(res.data.data.items);
+      setUnreadCount(res.data.data.unreadCount);
+    } catch {
+      // ignore transient errors
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void loadNotifications();
+    const timer = setInterval(() => void loadNotifications(), 30000);
+    return () => clearInterval(timer);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const handleGlobalSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = globalSearch.trim();
+    if (q) {
+      navigate(`/tickets?search=${encodeURIComponent(q)}`);
+    } else {
+      navigate('/tickets');
+    }
+  };
+
+  const handleMarkRead = async (n: NotificationItem) => {
+    if (!n.isRead) {
+      await api.patch(`/notifications/${n.id}/read`);
+      await loadNotifications();
+    }
+    setNotifOpen(false);
+    if (n.link) navigate(n.link);
+  };
+
+  const handleMarkAllRead = async () => {
+    await api.patch('/notifications/read-all');
+    await loadNotifications();
+  };
+
   useEffect(() => {
     for (const mod of modules) {
       const matchesSub = mod.submodules.some((s) => location.pathname === s.route);
@@ -68,44 +138,39 @@ export function AppShell({ children }: { children: ReactNode }) {
   })();
 
   const SidebarContent = (
-    <div className="flex h-full flex-col bg-white dark:bg-[#0D1321] border-r border-slate-200/90 dark:border-slate-800/80 transition-colors">
-      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800/80">
+    <div className="flex h-full flex-col bg-white dark:bg-[#16181D] border-r border-zinc-200 dark:border-zinc-800 transition-colors">
+      <div className="flex h-14 items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800">
         <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-950/20 dark:shadow-indigo-950/60 ring-1 ring-white/15">
+          <div className="h-7 w-7 shrink-0 rounded-md bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-xs">
             <Layers className="h-4 w-4" />
           </div>
           {!collapsed && (
-            <div className="truncate flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                TicketSphere
-              </span>
-              <span className="rounded-md bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-semibold dark:text-indigo-300 dark:ring-indigo-400/20">
-                ITSM
-              </span>
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+              TicketSphere
+            </span>
           )}
         </Link>
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-white transition"
+          className="hidden lg:flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
         <button
           type="button"
           onClick={() => setMobileOpen(false)}
-          className="lg:hidden p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+          className="lg:hidden p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+      <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
         {loadingNav && modules.length === 0 ? (
-          <div className="flex items-center gap-2 px-3 py-4 text-xs text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+          <div className="flex items-center gap-2 px-3 py-4 text-xs text-zinc-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
             {!collapsed && <span>Loading menu...</span>}
           </div>
         ) : (
@@ -122,22 +187,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={mod.id}
                   to={mod.route}
                   onClick={() => setMobileOpen(false)}
-                  className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition ${
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition ${
                     isModuleActive
-                      ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:bg-gradient-to-r dark:from-indigo-600/20 dark:to-violet-600/10 dark:text-white dark:ring-indigo-500/30 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-slate-100'
+                      ? 'bg-gradient-to-r from-blue-50 to-sky-50/60 text-blue-700 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400'
+                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100'
                   }`}
                   title={collapsed ? mod.name : undefined}
                 >
-                  {isModuleActive && (
-                    <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-indigo-600 dark:bg-indigo-400" />
-                  )}
                   <DynamicIcon
                     name={mod.icon}
                     className={`h-4 w-4 shrink-0 ${
                       isModuleActive
-                        ? 'text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-zinc-400 dark:text-zinc-500'
                     }`}
                   />
                   {!collapsed && <span className="truncate">{mod.name}</span>}
@@ -146,7 +208,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             }
 
             return (
-              <div key={mod.id} className="space-y-1">
+              <div key={mod.id} className="space-y-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -157,27 +219,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                       toggleModuleExpand(mod.id);
                     }
                   }}
-                  className={`group relative flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium transition ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-[13px] font-medium transition ${
                     isModuleActive
-                      ? 'bg-slate-100 text-slate-900 dark:bg-white/[0.05] dark:text-white'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-slate-100'
+                      ? 'text-zinc-900 bg-zinc-100/80 dark:text-zinc-100 dark:bg-zinc-800/60'
+                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100'
                   }`}
                   title={collapsed ? mod.name : undefined}
                 >
-                  <span className="flex items-center gap-3 min-w-0">
+                  <span className="flex items-center gap-2.5 min-w-0">
                     <DynamicIcon
                       name={mod.icon}
                       className={`h-4 w-4 shrink-0 ${
                         isModuleActive
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300'
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-zinc-400 dark:text-zinc-500'
                       }`}
                     />
                     {!collapsed && <span className="truncate">{mod.name}</span>}
                   </span>
                   {!collapsed && (
                     <ChevronDown
-                      className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
+                      className={`h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
                     />
@@ -185,7 +247,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
 
                 {!collapsed && isExpanded && (
-                  <div className="ml-4 pl-3 border-l border-slate-200 dark:border-slate-800 space-y-0.5">
+                  <div className="ml-3.5 pl-2.5 border-l border-zinc-200 dark:border-zinc-800 space-y-0.5 py-0.5">
                     {mod.submodules.map((sub) => {
                       const subActive = location.pathname === sub.route;
                       return (
@@ -193,18 +255,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                           key={sub.id}
                           to={sub.route}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition ${
+                          className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
                             subActive
-                              ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-500/30'
-                              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-slate-200'
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
+                              : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-200'
                           }`}
                         >
                           <DynamicIcon
                             name={sub.icon}
                             className={`h-3.5 w-3.5 shrink-0 ${
                               subActive
-                                ? 'text-indigo-600 dark:text-indigo-400'
-                                : 'text-slate-400 dark:text-slate-500'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-zinc-400 dark:text-zinc-500'
                             }`}
                           />
                           <span className="truncate">{sub.name}</span>
@@ -219,21 +281,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </nav>
 
-      <div className="border-t border-slate-200/80 dark:border-slate-800/80 p-3">
+      <div className="border-t border-zinc-200 dark:border-zinc-800 p-2.5">
         <Link
           to="/profile"
           onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-2.5 rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition"
+          className="flex items-center gap-2.5 rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition"
         >
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white">
+          <div className="h-7 w-7 shrink-0 rounded-md bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-[11px] font-semibold text-white">
             {initials}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">
+              <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100">
                 {user?.displayName}
               </p>
-              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                 {user?.roles.map((r) => r.name).join(', ') || 'User'}
               </p>
             </div>
@@ -244,10 +306,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen flex bg-[#F4F6FA] text-slate-900 dark:bg-[#090D16] dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex bg-[#F6F7F9] text-zinc-900 dark:bg-[#111215] dark:text-zinc-100 transition-colors">
       <aside
-        className={`hidden lg:block shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-[72px]' : 'w-64'
+        className={`hidden lg:block shrink-0 transition-all duration-150 ${
+          collapsed ? 'w-[64px]' : 'w-60'
         }`}
       >
         <div className="sticky top-0 h-screen">{SidebarContent}</div>
@@ -255,89 +317,156 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div
-            className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="relative w-64 max-w-xs h-full z-10">{SidebarContent}</div>
+          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div className="relative w-60 max-w-xs h-full z-10">{SidebarContent}</div>
         </div>
       )}
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-indigo-500/[0.04] dark:from-indigo-950/20 to-transparent" />
-
-        <header className="sticky top-0 z-30 h-16 bg-white/85 dark:bg-[#0D1321]/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 flex items-center justify-between gap-4 transition-colors">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-blue-500/[0.04] dark:from-blue-500/[0.05] to-transparent" />
+        <header className="sticky top-0 z-30 h-14 bg-white/90 dark:bg-[#16181D]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 flex items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+              className="lg:hidden p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 truncate">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 truncate">
               <span>TicketSphere</span>
               <span>/</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+              <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate">
                 {activeLabel}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="relative hidden md:block w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+          <div className="flex items-center gap-2">
+            <form onSubmit={handleGlobalSearch} className="relative hidden md:block w-64 lg:w-72">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search tickets, users, Jira..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-12 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-indigo-500/70 focus:outline-none transition"
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                placeholder="Search tickets, TS-1001..."
+                className="w-full rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-12 py-1.5 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white dark:border-zinc-800 dark:bg-[#111215] dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-[#111215] dark:focus:border-blue-500 focus:outline-none transition"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800/80">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded border border-zinc-200 bg-white px-1 py-0.5 text-[10px] font-mono text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800">
                 <Command className="h-2.5 w-2.5" />K
               </span>
-            </div>
+            </form>
 
             <ThemeToggle />
-
-            <button
-              type="button"
-              className="relative h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:border-slate-800 dark:bg-[#111827] dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white transition"
-              title="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
 
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setProfileMenuOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white pl-1.5 pr-2.5 py-1 text-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-[#111827] dark:hover:border-slate-700 transition"
+                onClick={() => {
+                  setNotifOpen((o) => !o);
+                  setProfileMenuOpen(false);
+                  void loadNotifications();
+                }}
+                className="relative h-8 w-8 flex items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-white transition"
+                title="Notifications"
               >
-                <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-[11px] font-bold text-white">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-600 text-[10px] font-semibold text-white flex items-center justify-center tabular-nums">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40 overflow-hidden">
+                  <div className="px-3.5 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      Notifications ({unreadCount} unread)
+                    </span>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => void handleMarkAllRead()}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <CheckCheck className="h-3 w-3" />
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {notifications.length === 0 ? (
+                      <p className="p-6 text-center text-xs text-zinc-400">
+                        You are all caught up.
+                      </p>
+                    ) : (
+                      notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          type="button"
+                          onClick={() => void handleMarkRead(n)}
+                          className={`w-full text-left px-3.5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition ${
+                            !n.isRead ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                              {n.title}
+                            </span>
+                            {!n.isRead && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
+                            {n.message}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 mt-1">
+                            {new Date(n.createdAt).toLocaleString()}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMenuOpen((o) => !o);
+                  setNotifOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white pl-1.5 pr-2 py-1 text-xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-[#181A1F] dark:hover:border-zinc-700 transition"
+              >
+                <div className="h-5 w-5 rounded bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-[10px] font-semibold text-white">
                   {initials}
                 </div>
-                <span className="hidden sm:inline font-medium text-slate-700 dark:text-slate-200">
+                <span className="hidden sm:inline font-medium text-zinc-700 dark:text-zinc-200">
                   {user?.displayName}
                 </span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl dark:border-slate-800 dark:bg-[#111827] dark:shadow-2xl z-40">
-                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-[#181A1F] z-40">
+                  <div className="px-3.5 py-2 border-b border-zinc-100 dark:border-zinc-800">
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-white truncate">
                       {user?.displayName}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
                       {user?.email}
                     </p>
                   </div>
                   <Link
                     to="/profile"
                     onClick={() => setProfileMenuOpen(false)}
-                    className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.05] dark:hover:text-white"
+                    className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
                   >
-                    <UserIcon className="h-3.5 w-3.5 text-slate-400" />
+                    <UserIcon className="h-3.5 w-3.5 text-zinc-400" />
                     Account &amp; Profile
                   </Link>
                   <button
@@ -354,9 +483,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="relative z-10 flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">{children}</main>
       </div>
     </div>
   );

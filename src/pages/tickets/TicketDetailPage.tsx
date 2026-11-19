@@ -40,10 +40,37 @@ export default function TicketDetailPage() {
   const canAssign = hasPermission('tickets.assign');
   const canDelete = hasPermission('tickets.delete');
   const canInternalNote = hasPermission('tickets.internal_notes');
+  const canSendEmail = hasPermission('emails.send');
+  const canManageJira = hasPermission('jira.manage');
+
+  const [jiraKeyInput, setJiraKeyInput] = useState('');
+  const [linkingJira, setLinkingJira] = useState(false);
+  const [jiraProjectKey, setJiraProjectKey] = useState('');
+  const [creatingJira, setCreatingJira] = useState(false);
+  const [jiraError, setJiraError] = useState<string | null>(null);
 
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [emailThreads, setEmailThreads] = useState<
+    Array<{
+      id: string;
+      subject: string;
+      messages: Array<{
+        id: string;
+        direction: 'INBOUND' | 'OUTBOUND';
+        fromEmail: string;
+        fromName: string | null;
+        bodyPreview: string | null;
+        receivedAt: string | null;
+        sentAt: string | null;
+        createdAt: string;
+      }>;
+    }>
+  >([]);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -61,16 +88,18 @@ export default function TicketDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [ticketRes, usersRes] = await Promise.all([
+      const [ticketRes, usersRes, emailsRes] = await Promise.all([
         api.get<{ success: boolean; data: TicketDetail }>(`/tickets/${id}`),
         canAssign
           ? api.get<{ success: boolean; data: UserProfile[] }>('/users', {
               params: { activeOnly: 'true' },
             })
           : Promise.resolve(null),
+        api.get<{ success: boolean; data: typeof emailThreads }>(`/emails/ticket/${id}`).catch(() => null),
       ]);
       setTicket(ticketRes.data.data);
       if (usersRes) setUsers(usersRes.data.data);
+      if (emailsRes) setEmailThreads(emailsRes.data.data);
     } finally {
       setLoading(false);
     }
@@ -145,10 +174,69 @@ export default function TicketDetailPage() {
     }
   };
 
+  const handleSendOutlookReply = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ticket || !replyText.trim()) return;
+    setSendingReply(true);
+    setReplyError(null);
+    try {
+      await api.post(`/emails/ticket/${ticket.id}/reply`, { body: replyText.trim() });
+      setReplyText('');
+      await loadTicket();
+    } catch (err: unknown) {
+      setReplyError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          'Failed to send Outlook reply'
+      );
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleLinkJira = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ticket || !jiraKeyInput.trim()) return;
+    setLinkingJira(true);
+    setJiraError(null);
+    try {
+      await api.post(`/jira/tickets/${ticket.id}/link`, { jiraKey: jiraKeyInput.trim() });
+      setJiraKeyInput('');
+      await loadTicket();
+    } catch (err: unknown) {
+      setJiraError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          'Failed to link Jira issue'
+      );
+    } finally {
+      setLinkingJira(false);
+    }
+  };
+
+  const handleCreateJira = async () => {
+    if (!ticket || !jiraProjectKey.trim()) return;
+    setCreatingJira(true);
+    setJiraError(null);
+    try {
+      await api.post(`/jira/tickets/${ticket.id}/create`, {
+        projectKey: jiraProjectKey.trim().toUpperCase(),
+        issueType: 'Task',
+      });
+      setJiraProjectKey('');
+      await loadTicket();
+    } catch (err: unknown) {
+      setJiraError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          'Failed to create Jira issue'
+      );
+    } finally {
+      setCreatingJira(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-12 text-center text-slate-400">
-        <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-indigo-500" />
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-12 text-center text-zinc-400">
+        <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-blue-500" />
         Loading ticket details...
       </div>
     );
@@ -156,9 +244,9 @@ export default function TicketDetailPage() {
 
   if (!ticket) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-8 text-center">
-        <p className="text-sm text-slate-500">Ticket not found.</p>
-        <Link to="/tickets" className="text-xs text-indigo-500 hover:underline mt-2 inline-block">
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-8 text-center">
+        <p className="text-sm text-zinc-500">Ticket not found.</p>
+        <Link to="/tickets" className="text-xs text-blue-500 hover:underline mt-2 inline-block">
           Back to tickets
         </Link>
       </div>
@@ -199,23 +287,23 @@ export default function TicketDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
         <div className="space-y-2">
           <Link
             to="/tickets"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Tickets
           </Link>
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-xs font-bold rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30 px-2.5 py-1">
+            <span className="font-mono text-xs font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30 px-2.5 py-1">
               {ticket.ticketNumber}
             </span>
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
             {ticket.title}
           </h1>
         </div>
@@ -225,7 +313,7 @@ export default function TicketDetailPage() {
             <button
               type="button"
               onClick={openEditModal}
-              className="rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800 px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
+              className="rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-200 dark:hover:bg-zinc-800 px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
             >
               <Edit2 className="h-3.5 w-3.5" />
               Edit
@@ -256,43 +344,43 @@ export default function TicketDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Column */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-6">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
               Description
             </h2>
-            <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed">
               {ticket.description}
             </p>
           </div>
 
           {/* Attachments */}
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-6">
+          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Paperclip className="h-4 w-4 text-indigo-500" />
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-blue-500" />
                 Attachments ({ticket.attachments.length})
               </h2>
               {canEditThisTicket && (
-                <label className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-[#090D16] dark:hover:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                <label className="cursor-pointer rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-[#111215] dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200">
                   {uploadingFile ? 'Uploading...' : '+ Upload File'}
                   <input type="file" className="hidden" onChange={handleFileUpload} />
                 </label>
               )}
             </div>
             {ticket.attachments.length === 0 ? (
-              <p className="text-xs text-slate-400">No attachments uploaded yet.</p>
+              <p className="text-xs text-zinc-400">No attachments uploaded yet.</p>
             ) : (
               <div className="space-y-2">
                 {ticket.attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#090D16] px-3.5 py-2.5 text-xs"
+                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] px-3.5 py-2.5 text-xs"
                   >
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-200">
+                      <p className="font-medium text-zinc-800 dark:text-zinc-200">
                         {att.fileName}
                       </p>
-                      <p className="text-slate-400">
+                      <p className="text-zinc-400">
                         {(att.fileSize / 1024).toFixed(1)} KB • {att.uploadedBy.displayName}
                       </p>
                     </div>
@@ -300,7 +388,7 @@ export default function TicketDetailPage() {
                       href={`/api/tickets/${ticket.id}/attachments/${att.id}/download`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                      className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
@@ -312,15 +400,15 @@ export default function TicketDetailPage() {
           </div>
 
           {/* Comments & Internal Notes */}
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-6 space-y-5">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-indigo-500" />
+          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6 space-y-5">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-blue-500" />
               Comments &amp; Notes ({ticket.comments.length})
             </h2>
 
             <div className="space-y-3">
               {ticket.comments.length === 0 ? (
-                <p className="text-xs text-slate-400">No comments yet.</p>
+                <p className="text-xs text-zinc-400">No comments yet.</p>
               ) : (
                 ticket.comments.map((c) => (
                   <div
@@ -328,11 +416,11 @@ export default function TicketDetailPage() {
                     className={`rounded-xl border p-4 text-sm ${
                       c.isInternal
                         ? 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
-                        : 'border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-[#090D16]'
+                        : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                      <span className="text-xs font-semibold text-zinc-900 dark:text-white">
                         {c.author.displayName}
                       </span>
                       <div className="flex items-center gap-2">
@@ -342,12 +430,12 @@ export default function TicketDetailPage() {
                             Internal Note
                           </span>
                         )}
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-zinc-400">
                           {new Date(c.createdAt).toLocaleString()}
                         </span>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
                       {c.content}
                     </p>
                   </div>
@@ -355,23 +443,23 @@ export default function TicketDetailPage() {
               )}
             </div>
 
-            <form onSubmit={handleAddComment} className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <form onSubmit={handleAddComment} className="space-y-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
               <textarea
                 rows={3}
                 required
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={isInternal ? 'Write an internal team note...' : 'Write a comment...'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3.5 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3.5 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
               />
               <div className="flex items-center justify-between gap-3">
                 {canInternalNote ? (
-                  <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isInternal}
                       onChange={(e) => setIsInternal(e.target.checked)}
-                      className="rounded border-slate-300 dark:border-slate-700 text-amber-500"
+                      className="rounded border-zinc-300 dark:border-zinc-700 text-amber-500"
                     />
                     Internal note (hidden from end users)
                   </label>
@@ -381,7 +469,7 @@ export default function TicketDetailPage() {
                 <button
                   type="submit"
                   disabled={postingComment}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
                 >
                   {postingComment ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -393,22 +481,92 @@ export default function TicketDetailPage() {
               </div>
             </form>
           </div>
+
+          {/* Linked Outlook Email Conversation */}
+          {emailThreads.length > 0 && (
+            <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Mail className="h-4 w-4 text-sky-500" />
+                Outlook Email Conversation
+              </h2>
+              {emailThreads.map((thread) => (
+                <div key={thread.id} className="space-y-3">
+                  {thread.messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`rounded-xl border p-3.5 text-xs ${
+                        m.direction === 'OUTBOUND'
+                          ? 'border-blue-200 bg-blue-50/60 dark:border-blue-500/30 dark:bg-blue-500/10'
+                          : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-semibold text-zinc-900 dark:text-white">
+                          {m.direction === 'OUTBOUND' ? 'Sent by ' : 'From '}
+                          {m.fromName || m.fromEmail}
+                        </span>
+                        <span className="text-[11px] text-zinc-400">
+                          {new Date(m.receivedAt || m.sentAt || m.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                        {m.bodyPreview}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {canSendEmail && (
+                <form
+                  onSubmit={handleSendOutlookReply}
+                  className="space-y-2.5 pt-3 border-t border-zinc-200 dark:border-zinc-800"
+                >
+                  {replyError && (
+                    <p className="text-xs text-rose-500">{replyError}</p>
+                  )}
+                  <textarea
+                    rows={3}
+                    required
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Reply to this Outlook thread directly from TicketSphere..."
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3.5 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={sendingReply}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      {sendingReply ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Mail className="h-3.5 w-3.5" />
+                      )}
+                      Send Outlook Reply
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Metadata & History Sidebar */}
         <div className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-5 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
               Ticket Properties
             </h2>
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Status</label>
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">Status</label>
               <select
                 disabled={!canEditThisTicket}
                 value={ticket.status}
                 onChange={(e) => void handleStatusChange(e.target.value as TicketStatus)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 disabled:opacity-60 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-xs font-medium dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-xs font-medium dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 {ALL_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -419,12 +577,12 @@ export default function TicketDetailPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Priority</label>
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">Priority</label>
               <select
                 disabled={!canEditThisTicket}
                 value={ticket.priority}
                 onChange={(e) => void handlePriorityChange(e.target.value as TicketPriority)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 disabled:opacity-60 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-xs font-medium dark:text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-xs font-medium dark:text-white focus:border-blue-500 focus:outline-none"
               >
                 {ALL_PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -435,12 +593,12 @@ export default function TicketDetailPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Assignee</label>
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">Assignee</label>
               {canAssign ? (
                 <select
                   value={ticket.assignee?.id ?? ''}
                   onChange={(e) => void handleAssigneeChange(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-xs font-medium dark:text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-xs font-medium dark:text-white focus:border-blue-500 focus:outline-none"
                 >
                   <option value="">Unassigned</option>
                   {users.map((u) => (
@@ -450,71 +608,109 @@ export default function TicketDetailPage() {
                   ))}
                 </select>
               ) : (
-                <p className="text-xs font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <UserIcon className="h-3.5 w-3.5 text-slate-400" />
+                <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                  <UserIcon className="h-3.5 w-3.5 text-zinc-400" />
                   {ticket.assignee ? ticket.assignee.displayName : 'Unassigned'}
                 </p>
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
+            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Reporter</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
+                <span className="text-zinc-400">Reporter</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
                   {ticket.reporter.displayName}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Module</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
+                <span className="text-zinc-400">Module</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
                   {ticket.module?.name || '—'}
                   {ticket.submodule ? ` / ${ticket.submodule.name}` : ''}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400 flex items-center gap-1">
+                <span className="text-zinc-400 flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" /> Due Date
                 </span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
                   {ticket.dueDate ? new Date(ticket.dueDate).toLocaleDateString() : '—'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400 flex items-center gap-1">
+                <span className="text-zinc-400 flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" /> Created
                 </span>
-                <span className="text-slate-600 dark:text-slate-300">
+                <span className="text-zinc-600 dark:text-zinc-300">
                   {new Date(ticket.createdAt).toLocaleString()}
                 </span>
               </div>
             </div>
 
             {/* External References */}
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                 Integrations
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">Jira Issue</span>
+                <span className="text-zinc-400">Jira Issue</span>
                 {ticket.jiraIssue ? (
                   <a
                     href={ticket.jiraIssue.issueUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-mono text-indigo-500 hover:underline"
+                    className="inline-flex items-center gap-1 font-mono text-blue-500 hover:underline"
                   >
-                    {ticket.jiraIssue.jiraKey}
+                    {ticket.jiraIssue.jiraKey} ({ticket.jiraIssue.statusName})
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
-                  <span className="text-slate-500">Not linked</span>
+                  <span className="text-zinc-500">Not linked</span>
                 )}
               </div>
+              {canManageJira && !ticket.jiraIssue && (
+                <div className="space-y-2 pt-1">
+                  {jiraError && <p className="text-[11px] text-rose-500">{jiraError}</p>}
+                  <form onSubmit={handleLinkJira} className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={jiraKeyInput}
+                      onChange={(e) => setJiraKeyInput(e.target.value)}
+                      placeholder="Link key (e.g. PROJ-245)"
+                      className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-2.5 py-1 text-xs font-mono dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={linkingJira}
+                      className="rounded-lg bg-blue-600 hover:bg-blue-500 px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                    >
+                      {linkingJira ? '...' : 'Link'}
+                    </button>
+                  </form>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={jiraProjectKey}
+                      onChange={(e) => setJiraProjectKey(e.target.value)}
+                      placeholder="Create in project (e.g. PROJ)"
+                      className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-2.5 py-1 text-xs font-mono dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={creatingJira || !jiraProjectKey.trim()}
+                      onClick={() => void handleCreateJira()}
+                      className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      {creatingJira ? '...' : 'Create'}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1">
+                <span className="text-zinc-400 flex items-center gap-1">
                   <Mail className="h-3.5 w-3.5" /> Outlook Ref
                 </span>
-                <span className="text-slate-500 font-mono">
+                <span className="text-zinc-500 font-mono">
                   {ticket.outlookEmailId ? 'Linked' : 'None'}
                 </span>
               </div>
@@ -522,8 +718,8 @@ export default function TicketDetailPage() {
           </div>
 
           {/* Activity History */}
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-4">
+          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 mb-4">
               <History className="h-3.5 w-3.5" />
               Activity History
             </h2>
@@ -531,19 +727,19 @@ export default function TicketDetailPage() {
               {ticket.history.map((h) => (
                 <div
                   key={h.id}
-                  className="border-l-2 border-indigo-500/40 pl-3 py-0.5 text-xs space-y-0.5"
+                  className="border-l-2 border-blue-500/40 pl-3 py-0.5 text-xs space-y-0.5"
                 >
-                  <p className="font-medium text-slate-800 dark:text-slate-200">
+                  <p className="font-medium text-zinc-800 dark:text-zinc-200">
                     {h.action.replace(/_/g, ' ')}
                     {h.field ? ` (${h.field})` : ''}
                   </p>
                   {(h.oldValue || h.newValue) && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
                       {h.oldValue ? `${h.oldValue} → ` : ''}
                       {h.newValue}
                     </p>
                   )}
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-zinc-400">
                     {h.actor?.displayName ?? 'System'} • {new Date(h.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -555,22 +751,22 @@ export default function TicketDetailPage() {
 
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white border border-slate-200 dark:bg-[#111827] dark:border-slate-800 shadow-2xl p-6">
+          <div className="w-full max-w-lg rounded-lg bg-white border border-zinc-200 dark:bg-[#181A1F] dark:border-zinc-800 shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
                 Edit {ticket.ticketNumber}
               </h2>
               <button
                 type="button"
                 onClick={() => setEditOpen(false)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                   Title
                 </label>
                 <input
@@ -579,11 +775,11 @@ export default function TicketDetailPage() {
                   minLength={3}
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                   Description
                 </label>
                 <textarea
@@ -591,12 +787,12 @@ export default function TicketDetailPage() {
                   required
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                     Category
                   </label>
                   <input
@@ -604,18 +800,18 @@ export default function TicketDetailPage() {
                     required
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
                     Due Date
                   </label>
                   <input
                     type="date"
                     value={editDueDate}
                     onChange={(e) => setEditDueDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -623,14 +819,14 @@ export default function TicketDetailPage() {
                 <button
                   type="button"
                   onClick={() => setEditOpen(false)}
-                  className="rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 px-4 py-2 text-sm font-medium dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 px-4 py-2 text-sm font-medium dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 inline-flex items-center gap-2"
+                  className="rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 inline-flex items-center gap-2"
                 >
                   {savingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
                   Save Changes

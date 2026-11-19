@@ -23,9 +23,9 @@ export default function AuthCallbackPage() {
   }, [searchParams, completeOAuthLogin, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F6FA] text-slate-600 dark:bg-[#090D16] dark:text-slate-300">
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F6FA] text-zinc-600 dark:bg-[#111215] dark:text-zinc-300">
       <div className="flex items-center gap-2.5 text-sm">
-        <Loader2 className="h-5 w-5 animate-spin text-indigo-600 dark:text-indigo-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
         <span>Completing Microsoft sign-in...</span>
       </div>
     </div>

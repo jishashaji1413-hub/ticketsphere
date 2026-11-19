@@ -11,7 +11,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      className="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-white transition text-xs font-medium"
+      className="h-8 px-2.5 inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white transition text-xs font-medium"
     >
       {isDark ? (
         <>
@@ -20,7 +20,7 @@ export function ThemeToggle() {
         </>
       ) : (
         <>
-          <Moon className="h-3.5 w-3.5 text-indigo-600" />
+          <Moon className="h-3.5 w-3.5 text-zinc-600" />
           <span className="hidden sm:inline">Dark</span>
         </>
       )}

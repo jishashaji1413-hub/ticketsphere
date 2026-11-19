@@ -27,27 +27,27 @@ export default function ModuleWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-slate-200/80 dark:border-slate-800/80 pb-5">
+      <div className="border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
         {parentName && (
-          <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
             {parentName}
           </p>
         )}
         <div className="flex items-center gap-3 mt-1">
-          <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/25 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25 flex items-center justify-center">
             <DynamicIcon name={matchedIcon} className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
               {matchedTitle}
             </h1>
-            <p className="text-xs font-mono text-slate-400">{location.pathname}</p>
+            <p className="text-xs font-mono text-zinc-400">{location.pathname}</p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] p-6">
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-6">
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
           This route is dynamically registered from your PostgreSQL module configuration. Dedicated
           feature views for Tickets, Outlook Email, Jira Integration, and Reports will attach here
           as we build Phases 5–9.

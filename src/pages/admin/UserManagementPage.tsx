@@ -117,45 +117,45 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800/80 pb-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
             Administration
           </p>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
             User Management
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             Create accounts, assign RBAC roles, and activate or deactivate access.
           </p>
         </div>
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500 transition shadow-md shadow-indigo-950/20 dark:shadow-indigo-950/50"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 hover:to-sky-500 transition shadow-xs"
         >
           <Plus className="h-4 w-4" />
           Add User
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#111827] overflow-hidden shadow-2xs">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden shadow-2xs">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email, department..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white dark:focus:bg-[#0B101B] dark:border-slate-800 dark:bg-[#090D16] pl-9 pr-3 py-2 text-sm dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] pl-9 pr-3 py-2 text-sm dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 dark:bg-[#0D1321] text-[11px] font-semibold uppercase tracking-wider dark:text-slate-400 dark:border-slate-800">
+            <thead className="bg-zinc-50 text-zinc-500 border-b border-zinc-200 dark:bg-[#16181D] text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400 dark:border-zinc-800">
               <tr>
                 <th className="px-5 py-3.5">User</th>
                 <th className="px-5 py-3.5">Department / Title</th>
@@ -164,17 +164,17 @@ export default function UserManagementPage() {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
-                    <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-indigo-600 dark:text-indigo-400" />
+                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500 dark:text-zinc-400">
+                    <Loader2 className="h-5 w-5 animate-spin inline mr-2 text-blue-600 dark:text-blue-400" />
                     Loading users...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500 dark:text-zinc-400">
                     No users found.
                   </td>
                 </tr>
@@ -182,22 +182,22 @@ export default function UserManagementPage() {
                 users.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition"
+                    className="hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] transition"
                   >
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-900 dark:text-white">{u.displayName}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
+                      <p className="font-medium text-zinc-900 dark:text-white">{u.displayName}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{u.email}</p>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">
+                    <td className="px-5 py-3.5 text-zinc-700 dark:text-zinc-300">
                       <p>{u.department || '—'}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{u.jobTitle || ''}</p>
+                      <p className="text-xs text-zinc-400 dark:text-zinc-500">{u.jobTitle || ''}</p>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-1.5">
                         {u.roles.map((r) => (
                           <span
                             key={r.id}
-                            className="rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 dark:bg-indigo-500/15 dark:border-indigo-400/20 px-2 py-0.5 text-xs font-medium dark:text-indigo-300"
+                            className="rounded-md bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/15 dark:border-blue-400/20 px-2 py-0.5 text-xs font-medium dark:text-blue-300"
                           >
                             {r.name}
                           </span>
@@ -209,7 +209,7 @@ export default function UserManagementPage() {
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
                           u.isActive
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25'
-                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                            : 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
                         }`}
                       >
                         {u.isActive ? 'Active' : 'Inactive'}
@@ -219,7 +219,7 @@ export default function UserManagementPage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(u)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60 px-2.5 py-1 text-xs font-medium dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60 px-2.5 py-1 text-xs font-medium dark:text-zinc-200 dark:hover:bg-zinc-800"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                         Edit
@@ -256,15 +256,15 @@ export default function UserManagementPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white border border-slate-200 dark:bg-[#111827] dark:border-slate-800 shadow-2xl p-6">
+          <div className="w-full max-w-lg rounded-lg bg-white border border-zinc-200 dark:bg-[#181A1F] dark:border-zinc-800 shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
                 {editingUser ? 'Edit User' : 'Create User'}
               </h2>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -278,7 +278,7 @@ export default function UserManagementPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
                   Email
                 </label>
                 <input
@@ -287,11 +287,11 @@ export default function UserManagementPage() {
                   disabled={Boolean(editingUser)}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white disabled:opacity-50 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white disabled:opacity-50 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -299,35 +299,35 @@ export default function UserManagementPage() {
                   required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
                     Job Title
                   </label>
                   <input
                     type="text"
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
                     Department
                   </label>
                   <input
                     type="text"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1.5">
                   {editingUser ? 'New Password (leave blank to keep)' : 'Initial Password'}
                 </label>
                 <input
@@ -336,24 +336,24 @@ export default function UserManagementPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 8 characters"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
                   Assign Roles
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {roles.map((role) => (
                     <label
                       key={role.id}
-                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:bg-[#090D16] px-3 py-2 text-sm dark:text-slate-200 cursor-pointer dark:hover:border-slate-700"
+                      className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-zinc-200 cursor-pointer dark:hover:border-zinc-700"
                     >
                       <input
                         type="checkbox"
                         checked={selectedRoleIds.includes(role.id)}
                         onChange={() => toggleRole(role.id)}
-                        className="rounded border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 text-blue-600 focus:ring-blue-500"
                       />
                       <span>{role.name}</span>
                     </label>
@@ -365,14 +365,14 @@ export default function UserManagementPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 px-4 py-2 text-sm font-medium dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 px-4 py-2 text-sm font-medium dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-violet-500 disabled:opacity-60 inline-flex items-center gap-2"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 hover:to-sky-500 disabled:opacity-60 inline-flex items-center gap-2"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingUser ? 'Save Changes' : 'Create User'}
