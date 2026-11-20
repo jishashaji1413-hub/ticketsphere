@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import { CreateTicketModal } from '../../components/tickets/CreateTicketModal';
 import {
   ALL_PRIORITIES,
@@ -35,16 +36,21 @@ import type { UserProfile } from '../../types/auth';
 
 interface TicketsListPageProps {
   defaultView?: 'all' | 'my' | 'assigned' | 'created' | 'unassigned';
+  defaultStatus?: TicketStatus | '';
+  defaultOverdue?: boolean;
   title: string;
   subtitle: string;
 }
 
 export default function TicketsListPage({
   defaultView = 'all',
+  defaultStatus = '',
+  defaultOverdue = false,
   title,
   subtitle,
 }: TicketsListPageProps) {
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
   const canCreate = hasPermission('tickets.create');
   const canUpdate = hasPermission('tickets.update');
   const canDelete = hasPermission('tickets.delete');
@@ -57,16 +63,20 @@ export default function TicketsListPage({
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [statusFilter, setStatusFilter] = useState<string>(
+    defaultStatus || (searchParams.get('status') ?? '')
+  );
+  const [overdueFilter, setOverdueFilter] = useState<boolean>(
+    Boolean(defaultOverdue || searchParams.get('overdue') === 'true')
+  );
 
   useEffect(() => {
-    const urlSearch = searchParams.get('search');
-    if (urlSearch !== null) {
-      setSearch(urlSearch);
-    }
-  }, [searchParams]);
-  const [statusFilter, setStatusFilter] = useState<string>('');
+    setSearch(searchParams.get('search') ?? '');
+    setStatusFilter(defaultStatus || (searchParams.get('status') ?? ''));
+    setOverdueFilter(Boolean(defaultOverdue || searchParams.get('overdue') === 'true'));
+  }, [defaultStatus, defaultOverdue, searchParams]);
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [projectFilter, setProjectFilter] = useState<string>('');
   const [moduleFilter, setModuleFilter] = useState<string>('');
@@ -94,6 +104,7 @@ export default function TicketsListPage({
           view: showDeleted ? 'deleted' : defaultView,
           search: search || undefined,
           status: statusFilter || undefined,
+          overdue: overdueFilter ? 'true' : undefined,
           priority: priorityFilter || undefined,
           projectName: projectFilter || undefined,
           moduleId: moduleFilter || undefined,
@@ -116,6 +127,7 @@ export default function TicketsListPage({
     showDeleted,
     search,
     statusFilter,
+    overdueFilter,
     priorityFilter,
     projectFilter,
     moduleFilter,
@@ -159,20 +171,51 @@ export default function TicketsListPage({
   };
 
   const handleQuickStatusChange = async (ticketId: string, nextStatus: TicketStatus) => {
-    await api.patch(`/tickets/${ticketId}`, { status: nextStatus });
-    await loadTickets();
+    try {
+      await api.patch(`/tickets/${ticketId}`, { status: nextStatus });
+      toast.success(`Ticket status updated to ${STATUS_LABELS[nextStatus]}.`);
+      await loadTickets();
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update ticket status'));
+    }
   };
 
   const handleDeleteTicket = async (t: TicketSummary) => {
     if (!window.confirm(`Delete ticket ${t.ticketNumber}?`)) return;
-    await api.delete(`/tickets/${t.id}`);
-    await loadTickets();
+    try {
+      await api.delete(`/tickets/${t.id}`);
+      toast.success(`Ticket ${t.ticketNumber} moved to deleted.`);
+      await loadTickets();
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete ticket'));
+    }
   };
 
   const handleRestoreTicket = async (t: TicketSummary) => {
-    await api.post(`/tickets/${t.id}/restore`);
-    await loadTickets();
+    try {
+      await api.post(`/tickets/${t.id}/restore`);
+      toast.success(`Ticket ${t.ticketNumber} restored.`);
+      await loadTickets();
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to restore ticket'));
+    }
   };
+
+  const effectiveTitle = showDeleted
+    ? 'Deleted Tickets'
+    : overdueFilter
+      ? 'Overdue Tickets'
+      : statusFilter && STATUS_LABELS[statusFilter as TicketStatus]
+        ? `${STATUS_LABELS[statusFilter as TicketStatus]} Tickets`
+        : title;
+
+  const effectiveSubtitle = showDeleted
+    ? 'Soft-deleted tickets that can be reviewed or restored'
+    : overdueFilter
+      ? 'Open tickets past their scheduled due date'
+      : statusFilter && STATUS_LABELS[statusFilter as TicketStatus]
+        ? `Showing tickets currently in ${STATUS_LABELS[statusFilter as TicketStatus]} status`
+        : subtitle;
 
   return (
     <div className="space-y-6">
@@ -182,14 +225,29 @@ export default function TicketsListPage({
             Ticket Management
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
-            {title}
+            {effectiveTitle}
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            {subtitle} • <span className="font-mono">{total}</span> total
+            {effectiveSubtitle} • <span className="font-mono">{total}</span> total
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {overdueFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setOverdueFilter(false);
+                const next = new URLSearchParams(searchParams);
+                next.delete('overdue');
+                setSearchParams(next);
+                setPage(1);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-300 px-3 py-2 text-xs font-medium transition"
+            >
+              Overdue Only ×
+            </button>
+          )}
           {canDelete && (
             <button
               type="button"
@@ -264,7 +322,15 @@ export default function TicketsListPage({
         <select
           value={statusFilter}
           onChange={(e) => {
-            setStatusFilter(e.target.value);
+            const val = e.target.value;
+            setStatusFilter(val);
+            const next = new URLSearchParams(searchParams);
+            if (val) {
+              next.set('status', val);
+            } else {
+              next.delete('status');
+            }
+            setSearchParams(next);
             setPage(1);
           }}
           className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"

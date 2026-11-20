@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import { NavigationProvider } from './context/NavigationContext';
 import { AppShell } from './components/layout/AppShell';
 
@@ -64,7 +65,8 @@ function ProtectedRoute({
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
         <AuthProvider>
           <NavigationProvider>
             <Suspense
@@ -149,6 +151,71 @@ export default function App() {
                         defaultView="unassigned"
                         title="Unassigned Tickets"
                         subtitle="Queue awaiting agent assignment"
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/not-started"
+                  element={
+                    <ProtectedRoute permission="tickets.read">
+                      <TicketsListPage
+                        defaultView="all"
+                        defaultStatus="NOT_STARTED"
+                        title="Not Started Tickets"
+                        subtitle="Tickets awaiting initial triage"
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/in-progress"
+                  element={
+                    <ProtectedRoute permission="tickets.read">
+                      <TicketsListPage
+                        defaultView="all"
+                        defaultStatus="IN_PROGRESS"
+                        title="In Progress Tickets"
+                        subtitle="Tickets actively being worked on"
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/pending"
+                  element={
+                    <ProtectedRoute permission="tickets.read">
+                      <TicketsListPage
+                        defaultView="all"
+                        defaultStatus="PENDING"
+                        title="Pending Tickets"
+                        subtitle="Tickets awaiting customer or external response"
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/completed"
+                  element={
+                    <ProtectedRoute permission="tickets.read">
+                      <TicketsListPage
+                        defaultView="all"
+                        defaultStatus="COMPLETED"
+                        title="Completed Tickets"
+                        subtitle="Resolved and completed service tickets"
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/overdue"
+                  element={
+                    <ProtectedRoute permission="tickets.read">
+                      <TicketsListPage
+                        defaultView="all"
+                        defaultOverdue
+                        title="Overdue Tickets"
+                        subtitle="Open tickets past their scheduled due date"
                       />
                     </ProtectedRoute>
                   }
@@ -262,6 +329,7 @@ export default function App() {
           </NavigationProvider>
         </AuthProvider>
       </BrowserRouter>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

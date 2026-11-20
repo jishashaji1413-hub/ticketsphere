@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  AlertCircle,
-  CheckCircle2,
   ExternalLink,
   GitBranch,
   Loader2,
@@ -11,6 +9,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 
 interface JiraStatus {
   configured: boolean;
@@ -40,6 +39,7 @@ interface LinkedJiraIssue {
 
 export default function JiraIntegrationPage() {
   const { hasPermission } = useAuth();
+  const toast = useToast();
   const location = useLocation();
   const canManage = hasPermission('jira.manage');
 
@@ -76,8 +76,6 @@ export default function JiraIntegrationPage() {
   const [apiToken, setApiToken] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectKey, setSelectedProjectKey] = useState('');
@@ -135,18 +133,13 @@ export default function JiraIntegrationPage() {
   const handleSaveConfig = async (e: FormEvent) => {
     e.preventDefault();
     setSavingConfig(true);
-    setMessage(null);
-    setError(null);
     try {
       await api.post('/jira/config', { baseUrl, email, apiToken });
       setApiToken('');
-      setMessage('Jira credentials saved securely.');
+      toast.success('Jira credentials saved securely.');
       await loadData();
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to save Jira configuration'
-      );
+      toast.error(getApiErrorMessage(err, 'Failed to save Jira configuration'));
     } finally {
       setSavingConfig(false);
     }
@@ -154,20 +147,15 @@ export default function JiraIntegrationPage() {
 
   const handleTestConnection = async () => {
     setTesting(true);
-    setMessage(null);
-    setError(null);
     try {
       const res = await api.post<{
         success: boolean;
         data: { account: { displayName: string } };
       }>('/jira/test');
-      setMessage(`Connected to Jira as ${res.data.data.account.displayName}`);
+      toast.success(`Connected to Jira as ${res.data.data.account.displayName}`);
       await loadData();
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Jira connection test failed'
-      );
+      toast.error(getApiErrorMessage(err, 'Jira connection test failed'));
     } finally {
       setTesting(false);
     }
@@ -175,7 +163,6 @@ export default function JiraIntegrationPage() {
 
   const runJiraSearch = async (query: string, projectKey: string) => {
     setSearching(true);
-    setError(null);
     try {
       const res = await api.get<{
         success: boolean;
@@ -194,10 +181,7 @@ export default function JiraIntegrationPage() {
       });
       setSearchResults(res.data.data);
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Jira search failed'
-      );
+      toast.error(getApiErrorMessage(err, 'Jira search failed'));
     } finally {
       setSearching(false);
     }
@@ -214,50 +198,49 @@ export default function JiraIntegrationPage() {
   };
 
   const handleSyncIssue = async (id: string) => {
-    await api.post(`/jira/issues/${id}/sync`);
-    await loadData();
+    try {
+      await api.post(`/jira/issues/${id}/sync`);
+      toast.success('Jira issue synced.');
+      await loadData();
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to sync Jira issue'));
+    }
   };
 
-  const handleStartEditIssue = async (issue: LinkedJiraIssue) => {
-    if (editingIssueId === issue.id) {
+  const handleStartEditIssue = async (targetId: string, summary: string) => {
+    if (editingIssueId === targetId) {
       setEditingIssueId(null);
       return;
     }
-    setError(null);
-    setMessage(null);
-    setEditingIssueId(issue.id);
-    setEditSummary(issue.summary);
+    setEditingIssueId(targetId);
+    setEditSummary(summary);
     setEditDescription('');
     setEditTransitionId('');
     try {
       const res = await api.get<{
         success: boolean;
         data: Array<{ id: string; name: string; toStatus: string }>;
-      }>(`/jira/issues/${issue.id}/transitions`);
+      }>(`/jira/issues/${encodeURIComponent(targetId)}/transitions`);
       setTransitions(res.data.data);
-    } catch {
+    } catch (err: unknown) {
       setTransitions([]);
+      toast.error(getApiErrorMessage(err, 'Failed to load Jira statuses'));
     }
   };
 
-  const handleSaveIssueUpdate = async (issueId: string) => {
+  const handleSaveIssueUpdate = async (targetId: string) => {
     setSavingIssue(true);
-    setError(null);
-    setMessage(null);
     try {
-      await api.patch(`/jira/issues/${issueId}`, {
+      await api.patch(`/jira/issues/${encodeURIComponent(targetId)}`, {
         summary: editSummary.trim() || undefined,
         description: editDescription.trim() ? editDescription : undefined,
         transitionId: editTransitionId || undefined,
       });
       setEditingIssueId(null);
-      setMessage('Jira issue updated directly from TicketSphere.');
-      await loadData();
+      toast.success('Jira issue updated directly from TicketSphere.');
+      await Promise.all([loadData(), runJiraSearch(searchQuery, selectedProjectKey)]);
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to update Jira issue'
-      );
+      toast.error(getApiErrorMessage(err, 'Failed to update Jira issue'));
     } finally {
       setSavingIssue(false);
     }
@@ -276,20 +259,6 @@ export default function JiraIntegrationPage() {
           {sectionMeta.subtitle}
         </p>
       </div>
-
-      {message && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 p-3.5 text-xs dark:text-emerald-300 flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4" />
-          <span>{message}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 p-3.5 text-xs dark:text-rose-300 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {loading ? (
         <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-12 text-center text-zinc-400">
@@ -506,29 +475,102 @@ export default function JiraIntegrationPage() {
               {searchResults.length > 0 && (
                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                   {searchResults.map((r) => (
-                    <div key={r.jiraKey} className="p-3 flex items-center justify-between gap-3 text-xs">
-                      <div className="min-w-0 flex items-center gap-2 flex-wrap">
-                        {r.projectKey && (
-                          <span className="rounded bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-mono font-semibold">
-                            {r.projectKey}
+                    <div key={r.jiraKey} className="p-3 space-y-3 text-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                          {r.projectKey && (
+                            <span className="rounded bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-mono font-semibold">
+                              {r.projectKey}
+                            </span>
+                          )}
+                          <span className="font-mono font-semibold text-blue-500">{r.jiraKey}</span>
+                          <span className="text-zinc-800 dark:text-zinc-200">{r.summary}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px]">
+                            {r.statusName}
                           </span>
-                        )}
-                        <span className="font-mono font-semibold text-blue-500">{r.jiraKey}</span>
-                        <span className="text-zinc-800 dark:text-zinc-200">{r.summary}</span>
+                          {canManage && (
+                            <button
+                              type="button"
+                              onClick={() => void handleStartEditIssue(r.jiraKey, r.summary)}
+                              className="rounded-lg border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-0.5 text-[11px] font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20"
+                            >
+                              {editingIssueId === r.jiraKey ? 'Close' : 'Update'}
+                            </button>
+                          )}
+                          <a
+                            href={r.issueUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-500 hover:underline inline-flex items-center gap-1"
+                          >
+                            Open <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px]">
-                          {r.statusName}
-                        </span>
-                        <a
-                          href={r.issueUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-500 hover:underline inline-flex items-center gap-1"
-                        >
-                          Open <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
+
+                      {canManage && editingIssueId === r.jiraKey && (
+                        <div className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] p-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <div>
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={editTransitionId}
+                              onChange={(e) => setEditTransitionId(e.target.value)}
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            >
+                              <option value="">Keep ({r.statusName})</option>
+                              {transitions.map((tr) => (
+                                <option key={tr.id} value={tr.id}>
+                                  {tr.toStatus}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Summary
+                            </label>
+                            <input
+                              type="text"
+                              value={editSummary}
+                              onChange={(e) => setEditSummary(e.target.value)}
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-semibold uppercase text-zinc-400 mb-1">
+                              Description (optional)
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              placeholder="Leave blank to keep existing description"
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                            />
+                          </div>
+                          <div className="sm:col-span-3 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingIssueId(null)}
+                              className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              disabled={savingIssue}
+                              onClick={() => void handleSaveIssueUpdate(r.jiraKey)}
+                              className="rounded-lg bg-blue-600 hover:bg-blue-500 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                            >
+                              {savingIssue ? 'Saving...' : 'Save to Jira'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -594,7 +636,7 @@ export default function JiraIntegrationPage() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => void handleStartEditIssue(issue)}
+                              onClick={() => void handleStartEditIssue(issue.id, issue.summary)}
                               className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 px-2.5 py-1.5 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20"
                             >
                               {editingIssueId === issue.id ? 'Close' : 'Update in Jira'}

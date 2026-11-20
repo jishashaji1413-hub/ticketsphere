@@ -103,13 +103,13 @@ export default function DashboardPage() {
   };
 
   const kpiCards = [
-    { label: 'Total Tickets', value: kpis.totalTickets, icon: TicketIcon, color: 'text-blue-500' },
-    { label: 'Not Started', value: kpis.notStarted, icon: Clock, color: 'text-zinc-400' },
-    { label: 'In Progress', value: kpis.inProgress, icon: PlayCircle, color: 'text-sky-500' },
-    { label: 'Pending', value: kpis.pending, icon: PauseCircle, color: 'text-amber-500' },
-    { label: 'Completed', value: kpis.completed, icon: CheckCircle2, color: 'text-emerald-500' },
-    { label: 'Overdue', value: kpis.overdueTickets, icon: AlertTriangle, color: 'text-rose-500' },
-    { label: 'My Assigned', value: kpis.myAssignedTickets, icon: Inbox, color: 'text-violet-500' },
+    { label: 'Total Tickets', value: kpis.totalTickets, icon: TicketIcon, color: 'text-blue-500', to: '/tickets' },
+    { label: 'Not Started', value: kpis.notStarted, icon: Clock, color: 'text-zinc-400', to: '/tickets/not-started' },
+    { label: 'In Progress', value: kpis.inProgress, icon: PlayCircle, color: 'text-sky-500', to: '/tickets/in-progress' },
+    { label: 'Pending', value: kpis.pending, icon: PauseCircle, color: 'text-amber-500', to: '/tickets/pending' },
+    { label: 'Completed', value: kpis.completed, icon: CheckCircle2, color: 'text-emerald-500', to: '/tickets/completed' },
+    { label: 'Overdue', value: kpis.overdueTickets, icon: AlertTriangle, color: 'text-rose-500', to: '/tickets/overdue' },
+    { label: 'My Assigned', value: kpis.myAssignedTickets, icon: Inbox, color: 'text-violet-500', to: '/tickets/assigned' },
   ];
 
   return (
@@ -140,10 +140,11 @@ export default function DashboardPage() {
         {kpiCards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div
+            <Link
               key={card.label}
+              to={card.to}
               style={{ animationDelay: `${idx * 40}ms` }}
-              className="animate-fade-up ts-card-hover rounded-lg border border-zinc-200/90 bg-gradient-to-b from-white to-zinc-50/60 dark:border-zinc-800/90 dark:from-[#181A1F] dark:to-[#14161B] p-4 shadow-2xs hover:border-blue-500/40"
+              className="block animate-fade-up ts-card-hover rounded-lg border border-zinc-200/90 bg-gradient-to-b from-white to-zinc-50/60 dark:border-zinc-800/90 dark:from-[#181A1F] dark:to-[#14161B] p-4 shadow-2xs hover:border-blue-500/40"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -154,7 +155,7 @@ export default function DashboardPage() {
               <p className="mt-2.5 text-2xl font-bold text-zinc-900 dark:text-white font-mono">
                 {card.value}
               </p>
-            </div>
+            </Link>
           );
         })}
       </div>
