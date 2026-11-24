@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
+  Download,
   ExternalLink,
+  Eye,
   Forward,
   Inbox,
   Loader2,
@@ -75,6 +77,12 @@ export default function OutlookInboxPage() {
   const [forwardTo, setForwardTo] = useState('');
   const [forwardComment, setForwardComment] = useState('');
   const [forwarding, setForwarding] = useState(false);
+  const [loadingAttachmentId, setLoadingAttachmentId] = useState<string | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<{
+    name: string;
+    contentType: string;
+    url: string;
+  } | null>(null);
 
   const loadInbox = useCallback(async () => {
     setLoading(true);
@@ -192,14 +200,69 @@ export default function OutlookInboxPage() {
     }
   };
 
+  const closeAttachmentPreview = () => {
+    if (attachmentPreview) {
+      URL.revokeObjectURL(attachmentPreview.url);
+      setAttachmentPreview(null);
+    }
+  };
+
+  const handleOpenAttachment = async (
+    messageId: string,
+    attachment: { id: string; name: string; contentType: string; size: number }
+  ) => {
+    setLoadingAttachmentId(attachment.id);
+    try {
+      const res = await api.get<Blob>(
+        `/emails/${messageId}/attachments/${encodeURIComponent(attachment.id)}`,
+        { responseType: 'blob' }
+      );
+      const mimeType = attachment.contentType || res.data.type || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const isPreviewable =
+        mimeType.startsWith('image/') ||
+        mimeType === 'application/pdf' ||
+        mimeType.startsWith('text/');
+
+      if (isPreviewable) {
+        if (attachmentPreview) {
+          URL.revokeObjectURL(attachmentPreview.url);
+        }
+        setAttachmentPreview({
+          name: attachment.name,
+          contentType: mimeType,
+          url: blobUrl,
+        });
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = attachment.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      }
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to open attachment'));
+    } finally {
+      setLoadingAttachmentId(null);
+    }
+  };
+
   const handleForwardSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedMessage || !forwardTo.trim()) return;
+    if (!forwardComment.trim()) {
+      toast.error('Please enter a comment before forwarding.');
+      return;
+    }
     setForwarding(true);
     try {
       await api.post(`/emails/${selectedMessage.id}/forward`, {
         to: forwardTo.trim(),
-        comment: forwardComment.trim() || undefined,
+        comment: forwardComment.trim(),
       });
       setForwardOpen(false);
       setForwardTo('');
@@ -317,8 +380,8 @@ export default function OutlookInboxPage() {
                   type="button"
                   onClick={() => setSelectedId(m.id)}
                   className={`w-full text-left p-4 transition ${active
-                      ? 'bg-blue-50/80 dark:bg-blue-500/10'
-                      : 'hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
+                    ? 'bg-blue-50/80 dark:bg-blue-500/10'
+                    : 'hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
                     }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -426,25 +489,36 @@ export default function OutlookInboxPage() {
                 {selectedMessage.attachmentsMeta && selectedMessage.attachmentsMeta.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {selectedMessage.attachmentsMeta.map((a) => (
-                      <span
+                      <button
                         key={a.id}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] px-2.5 py-1 text-xs text-zinc-600 dark:text-zinc-300"
+                        type="button"
+                        disabled={loadingAttachmentId === a.id}
+                        onClick={() => void handleOpenAttachment(selectedMessage.id, a)}
+                        title={`Open ${a.name}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:border-blue-300 hover:bg-blue-50/70 dark:border-zinc-800 dark:bg-[#111215] dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 px-2.5 py-1 text-xs text-zinc-700 dark:text-zinc-200 transition disabled:opacity-60 cursor-pointer"
                       >
-                        <Paperclip className="h-3 w-3 text-blue-500" />
-                        {a.name} ({Math.round(a.size / 1024)} KB)
-                      </span>
+                        {loadingAttachmentId === a.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                        ) : (
+                          <Paperclip className="h-3 w-3 text-blue-500" />
+                        )}
+                        <span>
+                          {a.name} ({Math.max(1, Math.round(a.size / 1024))} KB)
+                        </span>
+                        <Eye className="h-3 w-3 text-zinc-400" />
+                      </button>
                     ))}
                   </div>
                 )}
 
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215] p-4 text-sm text-zinc-700 dark:text-zinc-200 max-h-[420px] overflow-y-auto">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215] p-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-200 max-h-[420px] overflow-y-auto">
                   {selectedMessage.bodyHtml ? (
                     <div
-                      className="prose prose-sm dark:prose-invert max-w-none"
+                      className="prose prose-sm dark:prose-invert max-w-none leading-relaxed [&>p]:mb-3 [&>div]:mb-2"
                       dangerouslySetInnerHTML={{ __html: selectedMessage.bodyHtml }}
                     />
                   ) : (
-                    <p className="whitespace-pre-wrap">{selectedMessage.bodyPreview}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed">{selectedMessage.bodyPreview}</p>
                   )}
                 </div>
               </div>
@@ -622,13 +696,14 @@ export default function OutlookInboxPage() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
-                  Note / Comment (optional)
+                  Comment <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   rows={4}
+                  required
                   value={forwardComment}
                   onChange={(e) => setForwardComment(e.target.value)}
-                  placeholder="Add an optional note above the forwarded message..."
+                  placeholder="Enter a comment to include above the forwarded message..."
                   className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -647,10 +722,73 @@ export default function OutlookInboxPage() {
                   className="rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 inline-flex items-center gap-2"
                 >
                   {forwarding && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Send Forward
+                  Send
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {attachmentPreview && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-xs p-4 sm:p-6"
+          onClick={closeAttachmentPreview}
+        >
+          <div
+            className="w-full max-w-4xl max-h-[calc(100vh-3rem)] flex flex-col rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#141821] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="shrink-0 flex items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 px-5 py-3.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Paperclip className="h-4 w-4 text-blue-500 shrink-0" />
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
+                  {attachmentPreview.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={attachmentPreview.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open in Tab
+                </a>
+                <a
+                  href={attachmentPreview.url}
+                  download={attachmentPreview.name}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-2.5 py-1.5 text-xs font-semibold text-white"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </a>
+                <button
+                  type="button"
+                  onClick={closeAttachmentPreview}
+                  aria-label="Close attachment preview"
+                  className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-zinc-100/70 dark:bg-[#0E1117] p-4 flex items-center justify-center min-h-[300px]">
+              {attachmentPreview.contentType.startsWith('image/') ? (
+                <img
+                  src={attachmentPreview.url}
+                  alt={attachmentPreview.name}
+                  className="max-w-full max-h-[70vh] rounded-lg object-contain shadow"
+                />
+              ) : (
+                <iframe
+                  src={attachmentPreview.url}
+                  title={attachmentPreview.name}
+                  className="w-full h-[70vh] rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

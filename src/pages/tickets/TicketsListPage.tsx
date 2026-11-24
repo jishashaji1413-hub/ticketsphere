@@ -4,10 +4,9 @@ import {
   ArrowUpDown,
   Kanban,
   Loader2,
-  MessageSquare,
-  Paperclip,
   Plus,
   RotateCcw,
+  Route,
   Search,
   Table2,
   Trash2,
@@ -17,6 +16,8 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import { CreateTicketModal } from '../../components/tickets/CreateTicketModal';
+import { KanbanBoard } from '../../components/tickets/KanbanBoard';
+import { TicketTrackModal } from '../../components/tickets/TicketTrackModal';
 import { PaginationBar } from '../../components/PaginationBar';
 import {
   ALL_PRIORITIES,
@@ -89,6 +90,7 @@ export default function TicketsListPage({
   const [total, setTotal] = useState(0);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [trackingTicket, setTrackingTicket] = useState<TicketSummary | null>(null);
 
   const loadTickets = useCallback(async () => {
     setLoading(true);
@@ -172,11 +174,16 @@ export default function TicketsListPage({
   };
 
   const handleQuickStatusChange = async (ticketId: string, nextStatus: TicketStatus) => {
+    const previousTickets = tickets;
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: nextStatus } : t))
+    );
     try {
       await api.patch(`/tickets/${ticketId}`, { status: nextStatus });
       toast.success(`Ticket status updated to ${STATUS_LABELS[nextStatus]}.`);
       await loadTickets();
     } catch (err: unknown) {
+      setTickets(previousTickets);
       toast.error(getApiErrorMessage(err, 'Failed to update ticket status'));
     }
   };
@@ -584,7 +591,17 @@ export default function TicketsListPage({
                         </div>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
-                        <StatusBadge status={t.status} />
+                        <div className="inline-flex items-center gap-2">
+                          <StatusBadge status={t.status} />
+                          <button
+                            type="button"
+                            onClick={() => setTrackingTicket(t)}
+                            className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+                          >
+                            <Route className="h-3 w-3" />
+                            Track Ticket
+                          </button>
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <PriorityBadge priority={t.priority} />
@@ -647,85 +664,25 @@ export default function TicketsListPage({
         </div>
       ) : (
         /* Kanban Board View */
-        <div className="flex overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-5 gap-4">
-          {ALL_STATUSES.map((colStatus) => {
-            const colTickets = tickets.filter((t) => t.status === colStatus);
-            return (
-              <div
-                key={colStatus}
-                className="min-w-[270px] sm:min-w-[290px] lg:min-w-0 snap-start rounded-lg border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#16181D] p-3 flex flex-col gap-3 min-h-[340px]"
-              >
-                <div className="flex items-center justify-between px-1">
-                  <StatusBadge status={colStatus} />
-                  <span className="text-xs font-mono text-zinc-400">{colTickets.length}</span>
-                </div>
-
-                <div className="space-y-2.5 flex-1">
-                  {colTickets.map((t) => (
-                    <div
-                      key={t.id}
-                      className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-3.5 space-y-2.5 shadow-2xs"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <Link
-                          to={`/tickets/${t.id}`}
-                          className="font-mono text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          {t.ticketNumber}
-                        </Link>
-                        <PriorityBadge priority={t.priority} />
-                      </div>
-                      <Link
-                        to={`/tickets/${t.id}`}
-                        className="block text-xs font-semibold text-zinc-900 dark:text-white hover:text-blue-500 line-clamp-2"
-                      >
-                        {t.title}
-                      </Link>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                        <span className="truncate">
-                          {t.assignee ? t.assignee.displayName : 'Unassigned'}
-                        </span>
-                        <span className="inline-flex items-center gap-2 shrink-0">
-                          <span className="inline-flex items-center gap-0.5">
-                            <MessageSquare className="h-3 w-3" />
-                            {t._count.comments}
-                          </span>
-                          <span className="inline-flex items-center gap-0.5">
-                            <Paperclip className="h-3 w-3" />
-                            {t._count.attachments}
-                          </span>
-                        </span>
-                      </div>
-                      {(canUpdate ||
-                        t.assignee?.id === user?.id ||
-                        t.reporter.id === user?.id) && (
-                          <select
-                            value={t.status}
-                            onChange={(e) =>
-                              void handleQuickStatusChange(t.id, e.target.value as TicketStatus)
-                            }
-                            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] px-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300 focus:outline-none"
-                          >
-                            {ALL_STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                Move to: {STATUS_LABELS[s]}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <KanbanBoard
+          tickets={tickets}
+          currentUserId={user?.id}
+          canUpdateAll={canUpdate}
+          readOnly={showDeleted}
+          onStatusChange={handleQuickStatusChange}
+          onTrackTicket={(t) => setTrackingTicket(t)}
+        />
       )}
 
       <CreateTicketModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => void loadTickets()}
+      />
+
+      <TicketTrackModal
+        ticket={trackingTicket}
+        onClose={() => setTrackingTicket(null)}
       />
     </div>
   );

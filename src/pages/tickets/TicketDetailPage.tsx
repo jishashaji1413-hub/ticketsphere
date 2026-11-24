@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar,
@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Paperclip,
   RotateCcw,
+  Route,
   Send,
   Trash2,
   User as UserIcon,
@@ -22,6 +23,7 @@ import {
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { getApiErrorMessage, useToast } from '../../context/ToastContext';
+import { TicketTrackModal } from '../../components/tickets/TicketTrackModal';
 import {
   ALL_PRIORITIES,
   ALL_STATUSES,
@@ -35,9 +37,11 @@ import type { UserProfile } from '../../types/auth';
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+  const [trackOpen, setTrackOpen] = useState(() => searchParams.get('track') === '1');
 
   const canUpdate = hasPermission('tickets.update');
   const canAssign = hasPermission('tickets.assign');
@@ -357,6 +361,14 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTrackOpen(true)}
+            className="rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <Route className="h-3.5 w-3.5" />
+            Track Ticket
+          </button>
           {canEditThisTicket && ticket.status === 'COMPLETED' && (
             <button
               type="button"
@@ -931,26 +943,43 @@ export default function TicketDetailPage() {
               Activity History
             </h2>
             <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-              {ticket.history.map((h) => (
-                <div
-                  key={h.id}
-                  className="border-l-2 border-blue-500/40 pl-3 py-0.5 text-xs space-y-0.5"
-                >
-                  <p className="font-medium text-zinc-800 dark:text-zinc-200">
-                    {h.action.replace(/_/g, ' ')}
-                    {h.field ? ` (${h.field})` : ''}
-                  </p>
-                  {(h.oldValue || h.newValue) && (
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
-                      {h.oldValue ? `${h.oldValue} → ` : ''}
-                      {h.newValue}
+              {ticket.history.map((h) => {
+                const resolveHistoryValue = (val: string | null) => {
+                  if (!val) return null;
+                  if (h.field === 'assigneeId' || h.field === 'assignee') {
+                    const matchedUser =
+                      users.find((u) => u.id === val) ||
+                      (ticket.assignee?.id === val ? ticket.assignee : null) ||
+                      (ticket.reporter.id === val ? ticket.reporter : null);
+                    if (matchedUser) return matchedUser.displayName;
+                  }
+                  return val;
+                };
+                const oldLabel = resolveHistoryValue(h.oldValue);
+                const newLabel = resolveHistoryValue(h.newValue);
+                const fieldLabel = h.field === 'assigneeId' ? 'assignee' : h.field;
+
+                return (
+                  <div
+                    key={h.id}
+                    className="border-l-2 border-blue-500/40 pl-3 py-0.5 text-xs space-y-0.5"
+                  >
+                    <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {h.action.replace(/_/g, ' ')}
+                      {fieldLabel ? ` (${fieldLabel})` : ''}
                     </p>
-                  )}
-                  <p className="text-[10px] text-zinc-400">
-                    {h.actor?.displayName ?? 'System'} • {new Date(h.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              ))}
+                    {(oldLabel || newLabel) && (
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                        {oldLabel ? `${oldLabel} → ` : ''}
+                        {newLabel}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-zinc-400">
+                      {h.actor?.displayName ?? 'System'} • {new Date(h.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1043,6 +1072,11 @@ export default function TicketDetailPage() {
           </div>
         </div>
       )}
+      <TicketTrackModal
+        ticket={trackOpen ? ticket : null}
+        onClose={() => setTrackOpen(false)}
+        showFullTicketLink={false}
+      />
     </div>
   );
 }

@@ -33,6 +33,7 @@ export interface TicketSummary {
   module: { id: string; name: string; projectName?: string | null; icon: string } | null;
   submodule: { id: string; name: string } | null;
   jiraIssue: { id: string; jiraKey: string; issueUrl: string; statusName: string } | null;
+  history?: TicketHistoryItem[];
   _count: { comments: number; attachments: number };
 }
 
