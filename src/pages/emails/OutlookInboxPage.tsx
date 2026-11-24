@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ExternalLink,
+  Forward,
   Inbox,
   Loader2,
   Mail,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import { ALL_PRIORITIES, PRIORITY_LABELS } from '../../components/tickets/TicketBadges';
 import type { ModuleOption, TicketPriority } from '../../types/ticket';
 
@@ -44,9 +46,11 @@ interface OutlookStatus {
 
 export default function OutlookInboxPage() {
   const { hasPermission } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const canConvert = hasPermission('emails.convert') && hasPermission('tickets.create');
+  const canSend = hasPermission('emails.send');
 
   const [status, setStatus] = useState<OutlookStatus | null>(null);
   const [messages, setMessages] = useState<EmailMessageItem[]>([]);
@@ -66,6 +70,11 @@ export default function OutlookInboxPage() {
   const [convModuleId, setConvModuleId] = useState('');
   const [convSubmoduleId, setConvSubmoduleId] = useState('');
   const [converting, setConverting] = useState(false);
+
+  const [forwardOpen, setForwardOpen] = useState(false);
+  const [forwardTo, setForwardTo] = useState('');
+  const [forwardComment, setForwardComment] = useState('');
+  const [forwarding, setForwarding] = useState(false);
 
   const loadInbox = useCallback(async () => {
     setLoading(true);
@@ -180,6 +189,26 @@ export default function OutlookInboxPage() {
       );
     } finally {
       setConverting(false);
+    }
+  };
+
+  const handleForwardSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedMessage || !forwardTo.trim()) return;
+    setForwarding(true);
+    try {
+      await api.post(`/emails/${selectedMessage.id}/forward`, {
+        to: forwardTo.trim(),
+        comment: forwardComment.trim() || undefined,
+      });
+      setForwardOpen(false);
+      setForwardTo('');
+      setForwardComment('');
+      toast.success(`Email forwarded to ${forwardTo.trim()}.`);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to forward email'));
+    } finally {
+      setForwarding(false);
     }
   };
 
@@ -355,26 +384,43 @@ export default function OutlookInboxPage() {
                     </p>
                   </div>
 
-                  {selectedMessage.conversation.ticket ? (
-                    <Link
-                      to={`/tickets/${selectedMessage.conversation.ticket.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30 px-3 py-1.5 text-xs font-semibold"
-                    >
-                      View {selectedMessage.conversation.ticket.ticketNumber}
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                  ) : (
-                    canConvert && (
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {canSend && (
                       <button
                         type="button"
-                        onClick={() => void openConvertModal(selectedMessage)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                        onClick={() => {
+                          setForwardTo('');
+                          setForwardComment('');
+                          setForwardOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-[#111215] dark:text-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-semibold transition"
                       >
-                        <TicketIcon className="h-3.5 w-3.5" />
-                        Create Ticket
+                        <Forward className="h-3.5 w-3.5" />
+                        Forward
                       </button>
-                    )
-                  )}
+                    )}
+
+                    {selectedMessage.conversation.ticket ? (
+                      <Link
+                        to={`/tickets/${selectedMessage.conversation.ticket.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30 px-3 py-1.5 text-xs font-semibold"
+                      >
+                        View {selectedMessage.conversation.ticket.ticketNumber}
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      canConvert && (
+                        <button
+                          type="button"
+                          onClick={() => void openConvertModal(selectedMessage)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                        >
+                          <TicketIcon className="h-3.5 w-3.5" />
+                          Create Ticket
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
 
                 {selectedMessage.attachmentsMeta && selectedMessage.attachmentsMeta.length > 0 && (
@@ -531,6 +577,77 @@ export default function OutlookInboxPage() {
                 >
                   {converting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Create Ticket
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {forwardOpen && selectedMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 backdrop-blur-xs p-4">
+          <div className="animate-fade-in w-full max-w-lg rounded-2xl bg-white border border-zinc-200 dark:bg-[#141821] dark:border-zinc-800 shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Forward className="h-4 w-4 text-blue-500" />
+                Forward Email
+              </h2>
+              <button
+                type="button"
+                onClick={() => setForwardOpen(false)}
+                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 truncate">
+              Subject: <span className="font-medium text-zinc-700 dark:text-zinc-200">{selectedMessage.subject}</span>
+            </p>
+
+            <form onSubmit={handleForwardSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                  To (comma-separated for multiple)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={forwardTo}
+                  onChange={(e) => setForwardTo(e.target.value)}
+                  placeholder="colleague@company.com, team@company.com"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                  Note / Comment (optional)
+                </label>
+                <textarea
+                  rows={4}
+                  value={forwardComment}
+                  onChange={(e) => setForwardComment(e.target.value)}
+                  placeholder="Add an optional note above the forwarded message..."
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-900 focus:bg-white dark:focus:bg-[#111215] dark:border-zinc-800 dark:bg-[#111215] px-3 py-2 text-sm dark:text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setForwardOpen(false)}
+                  className="rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 px-4 py-2 text-sm font-medium dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={forwarding}
+                  className="rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 inline-flex items-center gap-2"
+                >
+                  {forwarding && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Send Forward
                 </button>
               </div>
             </form>

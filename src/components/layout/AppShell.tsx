@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Command,
-  Layers,
   Loader2,
   LogOut,
   Menu,
@@ -20,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { DynamicIcon } from '../../utils/iconMap';
 import { ThemeToggle } from '../ThemeToggle';
+import { TicketSphereLogo } from '../TicketSphereLogo';
 
 interface NotificationItem {
   id: string;
@@ -139,14 +139,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   })();
 
   const SidebarContent = (
-    <div className="flex h-full flex-col bg-white dark:bg-[#16181D] border-r border-zinc-200 dark:border-zinc-800 transition-colors">
-      <div className="flex h-14 items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800">
-        <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="h-7 w-7 shrink-0 rounded-md bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-xs">
-            <Layers className="h-4 w-4" />
-          </div>
+    <div className="flex h-full flex-col bg-gradient-to-b from-[#0F172A] via-[#111B33] to-[#0B1120] border-r border-slate-800/90 text-slate-200">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-800/90">
+        <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden group">
+          <TicketSphereLogo className="group-hover:scale-105 group-hover:rotate-6 transition-transform duration-200 ring-1 ring-white/15" />
           {!collapsed && (
-            <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+            <span className="text-sm font-bold tracking-tight text-white truncate">
               TicketSphere
             </span>
           )}
@@ -154,7 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="hidden lg:flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
+          className="hidden lg:flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-white/10 hover:text-white transition"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
@@ -162,7 +160,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={() => setMobileOpen(false)}
-          className="lg:hidden p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
+          className="lg:hidden p-1 text-slate-400 hover:text-white"
         >
           <X className="h-4 w-4" />
         </button>
@@ -170,8 +168,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
         {loadingNav && modules.length === 0 ? (
-          <div className="flex items-center gap-2 px-3 py-4 text-xs text-zinc-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+          <div className="flex items-center gap-2 px-3 py-4 text-xs text-slate-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" />
             {!collapsed && <span>Loading menu...</span>}
           </div>
         ) : (
@@ -188,19 +186,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={mod.id}
                   to={mod.route}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition ${
+                  className={`ts-nav-item flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium ${
                     isModuleActive
-                      ? 'bg-gradient-to-r from-blue-50 to-sky-50/60 text-blue-700 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400'
-                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100'
+                      ? 'bg-gradient-to-r from-blue-600/30 via-indigo-500/20 to-cyan-500/10 text-white border-l-2 border-cyan-400 shadow-2xs'
+                      : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
                   }`}
                   title={collapsed ? mod.name : undefined}
                 >
                   <DynamicIcon
                     name={mod.icon}
                     className={`h-4 w-4 shrink-0 ${
-                      isModuleActive
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-zinc-400 dark:text-zinc-500'
+                      isModuleActive ? 'text-cyan-300' : 'text-slate-400'
                     }`}
                   />
                   {!collapsed && <span className="truncate">{mod.name}</span>}
@@ -220,10 +216,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                       toggleModuleExpand(mod.id);
                     }
                   }}
-                  className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-[13px] font-medium transition ${
+                  className={`ts-nav-item flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium ${
                     isModuleActive
-                      ? 'text-zinc-900 bg-zinc-100/80 dark:text-zinc-100 dark:bg-zinc-800/60'
-                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100'
+                      ? 'text-white bg-white/[0.08]'
+                      : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
                   }`}
                   title={collapsed ? mod.name : undefined}
                 >
@@ -231,16 +227,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <DynamicIcon
                       name={mod.icon}
                       className={`h-4 w-4 shrink-0 ${
-                        isModuleActive
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-zinc-400 dark:text-zinc-500'
+                        isModuleActive ? 'text-cyan-300' : 'text-slate-400'
                       }`}
                     />
                     {!collapsed && <span className="truncate">{mod.name}</span>}
                   </span>
                   {!collapsed && (
                     <ChevronDown
-                      className={`h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform ${
+                      className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
                     />
@@ -248,7 +242,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
 
                 {!collapsed && isExpanded && (
-                  <div className="ml-3.5 pl-2.5 border-l border-zinc-200 dark:border-zinc-800 space-y-0.5 py-0.5">
+                  <div className="ml-3.5 pl-2.5 border-l border-slate-800 space-y-0.5 py-0.5">
                     {mod.submodules.map((sub) => {
                       const subActive = location.pathname === sub.route;
                       return (
@@ -258,16 +252,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                           onClick={() => setMobileOpen(false)}
                           className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
                             subActive
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
-                              : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-200'
+                              ? 'bg-blue-500/20 text-cyan-300'
+                              : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
                           }`}
                         >
                           <DynamicIcon
                             name={sub.icon}
                             className={`h-3.5 w-3.5 shrink-0 ${
-                              subActive
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-zinc-400 dark:text-zinc-500'
+                              subActive ? 'text-cyan-300' : 'text-slate-500'
                             }`}
                           />
                           <span className="truncate">{sub.name}</span>
@@ -282,21 +274,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </nav>
 
-      <div className="border-t border-zinc-200 dark:border-zinc-800 p-2.5">
+      <div className="border-t border-slate-800/90 p-2.5">
         <Link
           to="/profile"
           onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-2.5 rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition"
+          className="flex items-center gap-2.5 rounded-lg p-2 hover:bg-white/[0.06] transition"
         >
-          <div className="h-7 w-7 shrink-0 rounded-md bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-[11px] font-semibold text-white">
+          <div className="h-7 w-7 shrink-0 rounded-md bg-blue-600/30 border border-blue-400/30 flex items-center justify-center text-[11px] font-semibold text-white">
             {initials}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100">
+              <p className="truncate text-xs font-medium text-white">
                 {user?.displayName}
               </p>
-              <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+              <p className="truncate text-[11px] text-slate-400">
                 {user?.roles.map((r) => r.name).join(', ') || 'User'}
               </p>
             </div>
@@ -307,7 +299,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen flex bg-[#F6F7F9] text-zinc-900 dark:bg-[#111215] dark:text-zinc-100 transition-colors">
+    <div className="min-h-screen flex bg-gradient-to-br from-[#D9E4F5] via-[#E2EAF7] to-[#D4E0F2] text-zinc-900 dark:bg-none dark:bg-[#0D1017] dark:text-zinc-100 transition-colors">
       <aside
         className={`hidden lg:block shrink-0 transition-all duration-150 ${
           collapsed ? 'w-[64px]' : 'w-60'
@@ -324,8 +316,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-blue-500/[0.04] dark:from-blue-500/[0.05] to-transparent" />
-        <header className="sticky top-0 z-30 h-14 bg-white/90 dark:bg-[#16181D]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 flex items-center justify-between gap-4 transition-colors">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-blue-600/[0.05] via-cyan-500/[0.02] dark:from-blue-500/[0.07] dark:via-cyan-500/[0.02] to-transparent" />
+        <header className="sticky top-0 z-30 h-16 bg-white/85 dark:bg-[#141821]/85 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -519,7 +511,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main
           key={location.pathname}
-          className="animate-fade-up relative z-10 flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto"
+          className="animate-fade-up relative z-10 flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto"
         >
           {children}
         </main>

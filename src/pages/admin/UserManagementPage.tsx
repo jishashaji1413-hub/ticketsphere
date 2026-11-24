@@ -182,9 +182,9 @@ export default function UserManagementPage() {
                 users.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] transition"
+                    className="ts-row-hover"
                   >
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 align-middle">
                       <p className="font-medium text-zinc-900 dark:text-white">{u.displayName}</p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">{u.email}</p>
                     </td>

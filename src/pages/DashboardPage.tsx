@@ -103,13 +103,69 @@ export default function DashboardPage() {
   };
 
   const kpiCards = [
-    { label: 'Total Tickets', value: kpis.totalTickets, icon: TicketIcon, color: 'text-blue-500', to: '/tickets' },
-    { label: 'Not Started', value: kpis.notStarted, icon: Clock, color: 'text-zinc-400', to: '/tickets/not-started' },
-    { label: 'In Progress', value: kpis.inProgress, icon: PlayCircle, color: 'text-sky-500', to: '/tickets/in-progress' },
-    { label: 'Pending', value: kpis.pending, icon: PauseCircle, color: 'text-amber-500', to: '/tickets/pending' },
-    { label: 'Completed', value: kpis.completed, icon: CheckCircle2, color: 'text-emerald-500', to: '/tickets/completed' },
-    { label: 'Overdue', value: kpis.overdueTickets, icon: AlertTriangle, color: 'text-rose-500', to: '/tickets/overdue' },
-    { label: 'My Assigned', value: kpis.myAssignedTickets, icon: Inbox, color: 'text-violet-500', to: '/tickets/assigned' },
+    {
+      label: 'Total Tickets',
+      value: kpis.totalTickets,
+      icon: TicketIcon,
+      color: 'text-blue-600 dark:text-blue-400',
+      iconBg: 'bg-blue-100/80 dark:bg-blue-500/15',
+      surface: 'from-white via-blue-50/40 to-indigo-50/50 border-blue-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets',
+    },
+    {
+      label: 'Not Started',
+      value: kpis.notStarted,
+      icon: Clock,
+      color: 'text-slate-600 dark:text-zinc-400',
+      iconBg: 'bg-slate-100 dark:bg-zinc-800',
+      surface: 'from-white via-slate-50/60 to-zinc-100/50 border-slate-200/80 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/not-started',
+    },
+    {
+      label: 'In Progress',
+      value: kpis.inProgress,
+      icon: PlayCircle,
+      color: 'text-sky-600 dark:text-sky-400',
+      iconBg: 'bg-sky-100/80 dark:bg-sky-500/15',
+      surface: 'from-white via-sky-50/45 to-cyan-50/50 border-sky-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/in-progress',
+    },
+    {
+      label: 'Pending',
+      value: kpis.pending,
+      icon: PauseCircle,
+      color: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-100/80 dark:bg-amber-500/15',
+      surface: 'from-white via-amber-50/45 to-orange-50/40 border-amber-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/pending',
+    },
+    {
+      label: 'Completed',
+      value: kpis.completed,
+      icon: CheckCircle2,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/15',
+      surface: 'from-white via-emerald-50/45 to-teal-50/50 border-emerald-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/completed',
+    },
+    {
+      label: 'Overdue',
+      value: kpis.overdueTickets,
+      icon: AlertTriangle,
+      color: 'text-rose-600 dark:text-rose-400',
+      iconBg: 'bg-rose-100/80 dark:bg-rose-500/15',
+      surface: 'from-white via-rose-50/45 to-pink-50/40 border-rose-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/overdue',
+    },
+    {
+      label: 'My Assigned',
+      value: kpis.myAssignedTickets,
+      icon: Inbox,
+      color: 'text-violet-600 dark:text-violet-400',
+      iconBg: 'bg-violet-100/80 dark:bg-violet-500/15',
+      surface: 'from-white via-violet-50/45 to-purple-50/40 border-violet-200/70 dark:from-[#141821] dark:via-[#141821] dark:to-[#141821] dark:border-zinc-800/90',
+      to: '/tickets/assigned',
+    },
   ];
 
   return (
@@ -143,14 +199,16 @@ export default function DashboardPage() {
             <Link
               key={card.label}
               to={card.to}
-              style={{ animationDelay: `${idx * 40}ms` }}
-              className="block animate-fade-up ts-card-hover rounded-lg border border-zinc-200/90 bg-gradient-to-b from-white to-zinc-50/60 dark:border-zinc-800/90 dark:from-[#181A1F] dark:to-[#14161B] p-4 shadow-2xs hover:border-blue-500/40"
+              style={{ animationDelay: `${idx * 45}ms` }}
+              className={`group block animate-fade-up ts-card-hover rounded-xl border bg-gradient-to-br ${card.surface} p-4 shadow-2xs`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                   {card.label}
                 </span>
-                <Icon className={`h-4 w-4 ${card.color}`} />
+                <div className={`h-7 w-7 rounded-lg ${card.iconBg} flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-hover:rotate-3`}>
+                  <Icon className={`h-4 w-4 ${card.color}`} />
+                </div>
               </div>
               <p className="mt-2.5 text-2xl font-bold text-zinc-900 dark:text-white font-mono">
                 {card.value}
@@ -162,7 +220,7 @@ export default function DashboardPage() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-5">
+        <div className="ts-card-hover rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800/90 dark:bg-[#141821] p-5 sm:p-6 shadow-2xs">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">
             Tickets by Status
           </h2>
@@ -190,7 +248,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-5">
+        <div className="ts-card-hover rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800/90 dark:bg-[#141821] p-5 sm:p-6 shadow-2xs">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">
             Tickets Created vs Completed (Monthly Trend)
           </h2>
@@ -267,14 +325,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Tickets */}
-      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden">
-        <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800/90 dark:bg-[#141821] overflow-hidden shadow-2xs">
+        <div className="px-5 py-4 border-b border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Recent Tickets</h2>
-          <Link to="/tickets" className="text-xs font-medium text-blue-500 hover:underline">
+          <Link to="/tickets" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
             View all
           </Link>
         </div>
-        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="divide-y divide-zinc-200/80 dark:divide-zinc-800/80">
           {(data?.recentTickets ?? []).length === 0 ? (
             <p className="p-6 text-center text-xs text-zinc-400">
               No tickets created yet. Create your first ticket to see live analytics.
@@ -284,7 +342,7 @@ export default function DashboardPage() {
               <Link
                 key={t.id}
                 to={`/tickets/${t.id}`}
-                className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition"
+                className="ts-row-hover px-5 py-3.5 flex items-center justify-between gap-4"
               >
                 <div className="min-w-0 flex items-center gap-3">
                   <span className="font-mono text-xs font-semibold text-blue-500">

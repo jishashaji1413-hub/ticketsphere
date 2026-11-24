@@ -13,6 +13,7 @@ import {
   Mail,
   MessageSquare,
   Paperclip,
+  RotateCcw,
   Send,
   Trash2,
   User as UserIcon,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import {
   ALL_PRIORITIES,
   ALL_STATUSES,
@@ -35,6 +37,7 @@ export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
 
   const canUpdate = hasPermission('tickets.update');
   const canAssign = hasPermission('tickets.assign');
@@ -79,6 +82,9 @@ export default function TicketDetailPage() {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [emailTemplates, setEmailTemplates] = useState<
+    Array<{ id: string; name: string; category: string; body: string }>
+  >([]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -96,22 +102,26 @@ export default function TicketDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [ticketRes, usersRes, emailsRes] = await Promise.all([
+      const [ticketRes, usersRes, emailsRes, templatesRes] = await Promise.all([
         api.get<{ success: boolean; data: TicketDetail }>(`/tickets/${id}`),
         canAssign
           ? api.get<{ success: boolean; data: UserProfile[] }>('/users', {
-              params: { activeOnly: 'true' },
-            })
+            params: { activeOnly: 'true' },
+          })
           : Promise.resolve(null),
         api.get<{ success: boolean; data: typeof emailThreads }>(`/emails/ticket/${id}`).catch(() => null),
+        canSendEmail
+          ? api.get<{ success: boolean; data: typeof emailTemplates }>('/emails/templates').catch(() => null)
+          : Promise.resolve(null),
       ]);
       setTicket(ticketRes.data.data);
       if (usersRes) setUsers(usersRes.data.data);
       if (emailsRes) setEmailThreads(emailsRes.data.data);
+      if (templatesRes) setEmailTemplates(templatesRes.data.data);
     } finally {
       setLoading(false);
     }
-  }, [id, canAssign]);
+  }, [id, canAssign, canSendEmail]);
 
   useEffect(() => {
     void loadTicket();
@@ -119,27 +129,57 @@ export default function TicketDetailPage() {
 
   const handleStatusChange = async (status: TicketStatus) => {
     if (!ticket) return;
-    const res = await api.patch<{ success: boolean; data: TicketDetail }>(`/tickets/${ticket.id}`, {
-      status,
-    });
-    setTicket(res.data.data);
+    if (status === 'COMPLETED' && !ticket.assignee) {
+      toast.error('Unassigned tickets cannot be marked as Completed. Please assign the ticket first.');
+      return;
+    }
+    const isAdmin = user?.roles.some((r) => r.name === 'Admin');
+    if (ticket.assignee && ticket.assignee.id !== user?.id && !isAdmin) {
+      toast.error(
+        `Only ${ticket.assignee.displayName} (the assigned user) or an Admin can change the status of this ticket.`
+      );
+      return;
+    }
+    try {
+      const res = await api.patch<{ success: boolean; data: TicketDetail }>(`/tickets/${ticket.id}`, {
+        status,
+      });
+      setTicket(res.data.data);
+      toast.success(`Status updated to ${STATUS_LABELS[status]}.`);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update ticket status'));
+    }
   };
 
   const handlePriorityChange = async (priority: TicketPriority) => {
     if (!ticket) return;
-    const res = await api.patch<{ success: boolean; data: TicketDetail }>(`/tickets/${ticket.id}`, {
-      priority,
-    });
-    setTicket(res.data.data);
+    try {
+      const res = await api.patch<{ success: boolean; data: TicketDetail }>(`/tickets/${ticket.id}`, {
+        priority,
+      });
+      setTicket(res.data.data);
+      toast.success(`Priority updated to ${PRIORITY_LABELS[priority]}.`);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update ticket priority'));
+    }
   };
 
   const handleAssigneeChange = async (assigneeId: string) => {
     if (!ticket) return;
-    const res = await api.patch<{ success: boolean; data: TicketDetail }>(
-      `/tickets/${ticket.id}/assign`,
-      { assigneeId: assigneeId || null }
-    );
-    setTicket(res.data.data);
+    try {
+      const res = await api.patch<{ success: boolean; data: TicketDetail }>(
+        `/tickets/${ticket.id}/assign`,
+        { assigneeId: assigneeId || null }
+      );
+      setTicket(res.data.data);
+      toast.success(
+        res.data.data.assignee
+          ? `Assigned to ${res.data.data.assignee.displayName}.`
+          : 'Ticket unassigned.'
+      );
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
+    }
   };
 
   const handleDelete = async () => {
@@ -194,7 +234,7 @@ export default function TicketDetailPage() {
     } catch (err: unknown) {
       setReplyError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to send Outlook reply'
+        'Failed to send Outlook reply'
       );
     } finally {
       setSendingReply(false);
@@ -213,7 +253,7 @@ export default function TicketDetailPage() {
     } catch (err: unknown) {
       setJiraError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to link Jira issue'
+        'Failed to link Jira issue'
       );
     } finally {
       setLinkingJira(false);
@@ -234,7 +274,7 @@ export default function TicketDetailPage() {
     } catch (err: unknown) {
       setJiraError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to create Jira issue'
+        'Failed to create Jira issue'
       );
     } finally {
       setCreatingJira(false);
@@ -317,6 +357,16 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {canEditThisTicket && ticket.status === 'COMPLETED' && (
+            <button
+              type="button"
+              onClick={() => void handleStatusChange('IN_PROGRESS')}
+              className="rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reopen Ticket
+            </button>
+          )}
           {canEditThisTicket && (
             <button
               type="button"
@@ -421,11 +471,10 @@ export default function TicketDetailPage() {
                 ticket.comments.map((c) => (
                   <div
                     key={c.id}
-                    className={`rounded-xl border p-4 text-sm ${
-                      c.isInternal
-                        ? 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
-                        : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
-                    }`}
+                    className={`rounded-xl border p-4 text-sm ${c.isInternal
+                      ? 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
+                      : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-zinc-900 dark:text-white">
@@ -502,11 +551,10 @@ export default function TicketDetailPage() {
                   {thread.messages.map((m) => (
                     <div
                       key={m.id}
-                      className={`rounded-xl border p-3.5 text-xs ${
-                        m.direction === 'OUTBOUND'
-                          ? 'border-blue-200 bg-blue-50/60 dark:border-blue-500/30 dark:bg-blue-500/10'
-                          : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
-                      }`}
+                      className={`rounded-xl border p-3.5 text-xs ${m.direction === 'OUTBOUND'
+                        ? 'border-blue-200 bg-blue-50/60 dark:border-blue-500/30 dark:bg-blue-500/10'
+                        : 'border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-[#111215]'
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-semibold text-zinc-900 dark:text-white">
@@ -532,6 +580,38 @@ export default function TicketDetailPage() {
                 >
                   {replyError && (
                     <p className="text-xs text-rose-500">{replyError}</p>
+                  )}
+                  {emailTemplates.length > 0 && (
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                        Use Template
+                      </label>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          const tpl = emailTemplates.find((t) => t.id === e.target.value);
+                          if (!tpl || !ticket) return;
+                          const filled = tpl.body
+                            .replace(/\{\{ticketNumber\}\}/g, ticket.ticketNumber)
+                            .replace(/\{\{ticketTitle\}\}/g, ticket.title)
+                            .replace(/\{\{status\}\}/g, STATUS_LABELS[ticket.status] || ticket.status)
+                            .replace(
+                              /\{\{assigneeName\}\}/g,
+                              ticket.assignee?.displayName || 'TicketSphere Support'
+                            );
+                          setReplyText(filled);
+                          e.target.value = '';
+                        }}
+                        className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-[#111215] px-3 py-1.5 text-xs font-medium dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">Insert a template...</option>
+                        {emailTemplates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.id}>
+                            [{tpl.category}] {tpl.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                   <textarea
                     rows={3}
@@ -715,10 +795,15 @@ export default function TicketDetailPage() {
                     </label>
                     <select
                       value={jiraTransitionId}
+                      disabled={ticket.jiraIssue.statusName.trim().toLowerCase() === 'done'}
                       onChange={(e) => setJiraTransitionId(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1 text-xs dark:text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1 text-xs dark:text-white focus:border-blue-500 focus:outline-none disabled:opacity-60"
                     >
-                      <option value="">Keep ({ticket.jiraIssue.statusName})</option>
+                      <option value="">
+                        {ticket.jiraIssue.statusName.trim().toLowerCase() === 'done'
+                          ? 'Done (Locked — cannot revert)'
+                          : `Keep (${ticket.jiraIssue.statusName})`}
+                      </option>
                       {jiraTransitions.map((tr) => (
                         <option key={tr.id} value={tr.id}>
                           {tr.toStatus}

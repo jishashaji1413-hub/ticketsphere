@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useNavigation } from '../../context/NavigationContext';
+import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import { AVAILABLE_ICONS, DynamicIcon } from '../../utils/iconMap';
 import type { PermissionItem, RoleWithPermissions } from '../../types/auth';
 import type { ModuleAdminItem, SubmoduleAdminItem } from '../../types/module';
@@ -31,6 +32,7 @@ type ModalTarget =
 
 export default function ModuleManagementPage() {
   const { refreshNavigation } = useNavigation();
+  const toast = useToast();
   const [modules, setModules] = useState<ModuleAdminItem[]>([]);
   const [roles, setRoles] = useState<RoleWithPermissions[]>([]);
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
@@ -175,20 +177,52 @@ export default function ModuleManagementPage() {
         }
       }
       setModalTarget(null);
+      toast.success(
+        modalTarget.editing
+          ? `${modalTarget.kind === 'module' ? 'Module' : 'Submodule'} "${name}" updated.`
+          : `${modalTarget.kind === 'module' ? 'Module' : 'Submodule'} "${name}" created.`
+      );
       await Promise.all([loadData(), refreshNavigation()]);
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to save configuration'
-      );
+      const msg = getApiErrorMessage(err, 'Failed to save configuration');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
   const quickToggleModule = async (mod: ModuleAdminItem, field: 'isEnabled' | 'isVisible') => {
-    await api.patch(`/modules/${mod.id}`, { [field]: !mod[field] });
-    await Promise.all([loadData(), refreshNavigation()]);
+    try {
+      const nextVal = !mod[field];
+      await api.patch(`/modules/${mod.id}`, { [field]: nextVal });
+      toast.success(
+        field === 'isEnabled'
+          ? `"${mod.name}" ${nextVal ? 'enabled' : 'disabled'}.`
+          : `"${mod.name}" ${nextVal ? 'shown' : 'hidden'}.`
+      );
+      await Promise.all([loadData(), refreshNavigation()]);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update module'));
+    }
+  };
+
+  const quickToggleSubmodule = async (
+    sub: SubmoduleAdminItem,
+    field: 'isEnabled' | 'isVisible'
+  ) => {
+    try {
+      const nextVal = !sub[field];
+      await api.patch(`/modules/submodules/${sub.id}`, { [field]: nextVal });
+      toast.success(
+        field === 'isEnabled'
+          ? `"${sub.name}" ${nextVal ? 'enabled' : 'disabled'}.`
+          : `"${sub.name}" ${nextVal ? 'shown' : 'hidden'}.`
+      );
+      await Promise.all([loadData(), refreshNavigation()]);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update submodule'));
+    }
   };
 
   const deleteModule = async (mod: ModuleAdminItem) => {
@@ -370,6 +404,11 @@ export default function ModuleManagementPage() {
                                     (Disabled)
                                   </span>
                                 )}
+                                {!sub.isVisible && (
+                                  <span className="text-[10px] text-amber-500 font-medium">
+                                    (Hidden)
+                                  </span>
+                                )}
                               </div>
                               <div className="flex flex-wrap gap-1 mt-0.5">
                                 {sub.roles.map((r) => (
@@ -385,6 +424,30 @@ export default function ModuleManagementPage() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void quickToggleSubmodule(sub, 'isEnabled')}
+                              title={sub.isEnabled ? 'Disable submodule' : 'Enable submodule'}
+                              className={`p-1.5 rounded-lg border transition ${
+                                sub.isEnabled
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                  : 'border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-[#111215]'
+                              }`}
+                            >
+                              <Power className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void quickToggleSubmodule(sub, 'isVisible')}
+                              title={sub.isVisible ? 'Hide submodule' : 'Show submodule'}
+                              className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-[#111215] dark:text-zinc-300 dark:hover:bg-zinc-800"
+                            >
+                              {sub.isVisible ? (
+                                <Eye className="h-3.5 w-3.5" />
+                              ) : (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                             <button
                               type="button"
                               onClick={() => openSubmoduleModal(mod, sub)}
@@ -414,8 +477,8 @@ export default function ModuleManagementPage() {
       )}
 
       {modalTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-lg bg-white border border-zinc-200 dark:bg-[#181A1F] dark:border-zinc-800 shadow-2xl p-6 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 backdrop-blur-xs p-4">
+          <div className="animate-fade-in w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white border border-zinc-200 dark:bg-[#141821] dark:border-zinc-800 shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
                 {modalTarget.kind === 'module'
@@ -455,7 +518,15 @@ export default function ModuleManagementPage() {
                       const val = e.target.value;
                       setName(val);
                       if (!modalTarget.editing) {
-                        setSlug(slugify(val));
+                        const nextSlug = slugify(val);
+                        setSlug(nextSlug);
+                        if (modalTarget.kind === 'module') {
+                          setRoute(nextSlug ? `/${nextSlug}` : '/');
+                        } else {
+                          const parentMod = modules.find((m) => m.id === modalTarget.moduleId);
+                          const base = parentMod?.route?.replace(/\/+$/, '') || '';
+                          setRoute(nextSlug ? `${base}/${nextSlug}` : `${base}/`);
+                        }
                       }
                     }}
                     placeholder="e.g. Asset Management"

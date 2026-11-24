@@ -14,11 +14,13 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 const RoleManagementPage = lazy(() => import('./pages/admin/RoleManagementPage'));
 const ModuleManagementPage = lazy(() => import('./pages/admin/ModuleManagementPage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const ModuleWorkspacePage = lazy(() => import('./pages/ModuleWorkspacePage'));
 const TicketsListPage = lazy(() => import('./pages/tickets/TicketsListPage'));
 const TicketDetailPage = lazy(() => import('./pages/tickets/TicketDetailPage'));
 const OutlookInboxPage = lazy(() => import('./pages/emails/OutlookInboxPage'));
 const EmailConversationsPage = lazy(() => import('./pages/emails/EmailConversationsPage'));
+const EmailTemplatesPage = lazy(() => import('./pages/emails/EmailTemplatesPage'));
 const JiraIntegrationPage = lazy(() => import('./pages/jira/JiraIntegrationPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 
@@ -253,6 +255,14 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/emails/templates"
+                  element={
+                    <ProtectedRoute permission="emails.send">
+                      <EmailTemplatesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/jira/*"
                   element={
                     <ProtectedRoute permission="jira.read">
@@ -313,6 +323,14 @@ export default function App() {
                   element={
                     <ProtectedRoute permission="modules.manage">
                       <ModuleManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/settings"
+                  element={
+                    <ProtectedRoute permission="settings.manage">
+                      <SettingsPage />
                     </ProtectedRoute>
                   }
                 />

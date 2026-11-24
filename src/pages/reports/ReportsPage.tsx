@@ -198,8 +198,8 @@ export default function ReportsPage({
                   data?.charts.byUser.map((u) => {
                     const pct = u.total > 0 ? Math.round((u.completed / u.total) * 100) : 0;
                     return (
-                      <tr key={u.name}>
-                        <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">
+                      <tr key={u.name} className="ts-row-hover">
+                        <td className="px-5 py-3.5 align-middle font-medium text-zinc-900 dark:text-white">
                           {u.name}
                         </td>
                         <td className="px-5 py-3 font-mono text-zinc-600 dark:text-zinc-300">

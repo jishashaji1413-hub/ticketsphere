@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="ts-orbit-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="55%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#ts-orbit-bg)" />
+  <g
+    transform="translate(12 12) scale(1.6667)"
+    stroke="#FFFFFF"
+    stroke-width="2.1"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="19" cy="5" r="2" />
+    <circle cx="5" cy="19" r="2" />
+    <path d="M19.8 11.4c.4 4.4-2.3 8.6-6.6 10" />
+    <path d="M4.2 12.6c-.4-4.4 2.3-8.6 6.6-10" />
+  </g>
+</svg>

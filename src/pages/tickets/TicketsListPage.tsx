@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
   Kanban,
   Loader2,
   MessageSquare,
@@ -19,6 +17,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { getApiErrorMessage, useToast } from '../../context/ToastContext';
 import { CreateTicketModal } from '../../components/tickets/CreateTicketModal';
+import { PaginationBar } from '../../components/PaginationBar';
 import {
   ALL_PRIORITIES,
   ALL_STATUSES,
@@ -85,6 +84,7 @@ export default function TicketsListPage({
   const [sortBy, setSortBy] = useState<'createdAt' | 'priority' | 'status' | 'dueDate'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(15);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -113,7 +113,7 @@ export default function TicketsListPage({
           sortBy,
           sortOrder,
           page,
-          limit: displayMode === 'kanban' ? 100 : 15,
+          limit: displayMode === 'kanban' ? 100 : limit,
         },
       });
       setTickets(res.data.data.items);
@@ -136,6 +136,7 @@ export default function TicketsListPage({
     sortBy,
     sortOrder,
     page,
+    limit,
     displayMode,
   ]);
 
@@ -304,8 +305,8 @@ export default function TicketsListPage({
       </div>
 
       {/* Filters Bar */}
-      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3">
-        <div className="relative sm:col-span-2 lg:flex-1 lg:min-w-[200px]">
+      <div className="rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800/90 dark:bg-[#141821] p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 shadow-2xs">
+        <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <input
             type="text"
@@ -439,7 +440,7 @@ export default function TicketsListPage({
           Loading tickets...
         </div>
       ) : displayMode === 'table' ? (
-        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] overflow-hidden shadow-2xs">
+        <div className="rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-800/90 dark:bg-[#141821] overflow-hidden shadow-2xs">
           {/* Mobile Card List */}
           <div className="sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
             {tickets.length === 0 ? (
@@ -550,9 +551,9 @@ export default function TicketsListPage({
                   tickets.map((t) => (
                     <tr
                       key={t.id}
-                      className="hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] transition"
+                      className="ts-row-hover"
                     >
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      <td className="px-5 py-3.5 whitespace-nowrap align-middle">
                         <Link
                           to={`/tickets/${t.id}`}
                           className="font-mono text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
@@ -560,23 +561,23 @@ export default function TicketsListPage({
                           {t.ticketNumber}
                         </Link>
                       </td>
-                      <td className="px-5 py-3.5 max-w-md">
+                      <td className="px-5 py-3.5 min-w-[260px] align-middle">
                         <Link
                           to={`/tickets/${t.id}`}
                           className="font-medium text-zinc-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-300 line-clamp-1"
                         >
                           {t.title}
                         </Link>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5 text-xs text-zinc-400">
                           {t.module?.projectName && (
-                            <span className="font-medium text-blue-500 dark:text-blue-400">
+                            <span className="font-medium text-blue-500 dark:text-blue-400 whitespace-nowrap">
                               {t.module.projectName} /
                             </span>
                           )}
-                          <span>{t.module?.name || t.category}</span>
-                          {t.submodule && <span>• {t.submodule.name}</span>}
+                          <span className="whitespace-nowrap">{t.module?.name || t.category}</span>
+                          {t.submodule && <span className="whitespace-nowrap">• {t.submodule.name}</span>}
                           {t.jiraIssue && (
-                            <span className="font-mono text-[10px] rounded bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 px-1.5 py-0.5">
+                            <span className="font-mono text-[10px] rounded bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 px-1.5 py-0.5 whitespace-nowrap">
                               {t.jiraIssue.jiraKey}
                             </span>
                           )}
@@ -632,31 +633,17 @@ export default function TicketsListPage({
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="px-5 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-              <span>
-                Page {page} of {totalPages}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
         </div>
       ) : (
         /* Kanban Board View */

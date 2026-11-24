@@ -231,14 +231,32 @@ export default function JiraIntegrationPage() {
   const handleSaveIssueUpdate = async (targetId: string) => {
     setSavingIssue(true);
     try {
-      await api.patch(`/jira/issues/${encodeURIComponent(targetId)}`, {
+      const res = await api.patch<{
+        success: boolean;
+        data?: { jiraKey?: string; summary?: string; statusName?: string };
+      }>(`/jira/issues/${encodeURIComponent(targetId)}`, {
         summary: editSummary.trim() || undefined,
         description: editDescription.trim() ? editDescription : undefined,
         transitionId: editTransitionId || undefined,
       });
+      const updated = res.data.data;
+      if (updated?.jiraKey) {
+        setSearchResults((prev) =>
+          prev.map((item) =>
+            item.jiraKey === updated.jiraKey
+              ? {
+                  ...item,
+                  summary: updated.summary ?? item.summary,
+                  statusName: updated.statusName ?? item.statusName,
+                }
+              : item
+          )
+        );
+      }
       setEditingIssueId(null);
       toast.success('Jira issue updated directly from TicketSphere.');
-      await Promise.all([loadData(), runJiraSearch(searchQuery, selectedProjectKey)]);
+      void loadData();
+      void runJiraSearch(searchQuery, selectedProjectKey);
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Failed to update Jira issue'));
     } finally {
@@ -401,10 +419,10 @@ export default function JiraIntegrationPage() {
                         key={p.id}
                         type="button"
                         onClick={() => void handleSelectProject(active ? '' : p.key)}
-                        className={`text-left rounded-xl border p-4 transition ${
+                        className={`ts-card-hover text-left rounded-xl border p-4 ${
                           active
                             ? 'border-blue-500 bg-blue-50/60 dark:border-blue-500/60 dark:bg-blue-500/10'
-                            : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-[#111215] dark:hover:border-zinc-700'
+                            : 'border-zinc-200 bg-zinc-50/50 hover:border-blue-400/50 dark:border-zinc-800 dark:bg-[#111215] dark:hover:border-blue-500/40'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -475,7 +493,7 @@ export default function JiraIntegrationPage() {
               {searchResults.length > 0 && (
                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                   {searchResults.map((r) => (
-                    <div key={r.jiraKey} className="p-3 space-y-3 text-xs">
+                    <div key={r.jiraKey} className="ts-row-hover p-3.5 space-y-3 text-xs">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex items-center gap-2 flex-wrap">
                           {r.projectKey && (
@@ -518,10 +536,15 @@ export default function JiraIntegrationPage() {
                             </label>
                             <select
                               value={editTransitionId}
+                              disabled={r.statusName.trim().toLowerCase() === 'done'}
                               onChange={(e) => setEditTransitionId(e.target.value)}
-                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white disabled:opacity-60"
                             >
-                              <option value="">Keep ({r.statusName})</option>
+                              <option value="">
+                                {r.statusName.trim().toLowerCase() === 'done'
+                                  ? 'Done (Locked — cannot revert)'
+                                  : `Keep (${r.statusName})`}
+                              </option>
                               {transitions.map((tr) => (
                                 <option key={tr.id} value={tr.id}>
                                   {tr.toStatus}
@@ -661,10 +684,15 @@ export default function JiraIntegrationPage() {
                             </label>
                             <select
                               value={editTransitionId}
+                              disabled={issue.statusName.trim().toLowerCase() === 'done'}
                               onChange={(e) => setEditTransitionId(e.target.value)}
-                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white"
+                              className="w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181A1F] px-2.5 py-1.5 text-xs dark:text-white disabled:opacity-60"
                             >
-                              <option value="">Keep ({issue.statusName})</option>
+                              <option value="">
+                                {issue.statusName.trim().toLowerCase() === 'done'
+                                  ? 'Done (Locked — cannot revert)'
+                                  : `Keep (${issue.statusName})`}
+                              </option>
                               {transitions.map((tr) => (
                                 <option key={tr.id} value={tr.id}>
                                   {tr.toStatus}
