@@ -37,6 +37,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -48,6 +49,7 @@
     opacity: 0;
     transform: scale(0.985);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -55,11 +57,56 @@
 }
 
 @keyframes ts-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) translateX(0px);
   }
+
   50% {
     transform: translateY(-10px) translateX(6px);
+  }
+}
+
+@keyframes ts-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ts-text-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes ts-logo-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25), 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+
+  50% {
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.55), 0 6px 18px rgba(37, 99, 235, 0.45);
+  }
+}
+
+@keyframes ts-grid-drift {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 36px 36px;
   }
 }
 
@@ -73,6 +120,89 @@
 
 .animate-float {
   animation: ts-float 7s ease-in-out infinite;
+}
+
+.animate-orbit-slow {
+  animation: ts-orbit-spin 2.5s linear infinite;
+}
+
+.animate-logo-glow {
+  animation: ts-logo-glow 3.6s ease-in-out infinite;
+}
+
+.animate-grid-drift {
+  animation: ts-grid-drift 18s linear infinite;
+}
+
+.ts-brand-shimmer {
+  background: linear-gradient(110deg, #ffffff 25%, #7dd3fc 48%, #ffffff 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ts-text-shimmer 5.5s linear infinite;
+}
+
+@keyframes ts-im-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.28);
+  }
+
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ts-im-shock {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(4.2);
+    opacity: 0;
+  }
+}
+
+@keyframes ts-im-flashk {
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.ts-im-word {
+  opacity: 0;
+  transform: scale(0.28);
+  animation: ts-im-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.ts-im-ring {
+  opacity: 0;
+  animation: ts-im-shock 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ts-im-flash {
+  opacity: 0;
+  animation: ts-im-flashk 0.5s ease-out 0.25s forwards;
 }
 
 .ts-card-hover {
@@ -118,6 +248,7 @@ html.dark .ts-row-hover:hover {
 }
 
 @layer base {
+
   input:not([type='checkbox']):not([type='radio']),
   select,
   textarea {
@@ -158,10 +289,12 @@ html.dark .ts-row-hover:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .animate-fade-up,
   .animate-fade-in {
     animation: none !important;
   }
+
   .ts-card-hover:hover {
     transform: none;
   }

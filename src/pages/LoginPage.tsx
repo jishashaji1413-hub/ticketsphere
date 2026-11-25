@@ -16,6 +16,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { TicketSphereLogo } from '../components/TicketSphereLogo';
+import { ImpactTitle } from '../components/ImpactTitle';
 
 export default function LoginPage() {
   const { user, login, register, registerInitialAdmin } = useAuth();
@@ -98,29 +99,33 @@ export default function LoginPage() {
     <div className="min-h-screen grid lg:grid-cols-12 bg-gradient-to-br from-[#E8F1FF] via-[#F1F6FF] to-[#DCE9FE] text-zinc-900 dark:bg-none dark:bg-[#0D1017] dark:text-zinc-100 transition-colors">
       {/* Left Architectural Editorial Panel */}
       <div className="hidden lg:flex lg:col-span-5 relative flex-col justify-between bg-gradient-to-br from-[#0F3D6E] via-[#154D8A] to-[#0D7490] dark:from-[#0F172A] dark:via-[#131C31] dark:to-[#0B1120] text-white p-10 xl:p-14 border-r border-blue-900/20 dark:border-zinc-800/80 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-fintech-grid opacity-80" />
+        <div className="pointer-events-none absolute inset-0 bg-fintech-grid animate-grid-drift opacity-80" />
         <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-400/25 dark:bg-blue-600/20 blur-3xl animate-float" />
         <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-sky-300/25 dark:bg-cyan-500/15 blur-3xl animate-float" style={{ animationDelay: '2.5s' }} />
-        <div className="relative z-10 flex items-center gap-2.5 animate-fade-up group">
-          <TicketSphereLogo className="group-hover:scale-105 group-hover:rotate-6 transition-transform duration-200 ring-1 ring-white/25" />
-          <span className="text-base font-bold tracking-tight text-white">TicketSphere</span>
+        <div className="relative z-10 flex items-center gap-2.5 group">
+          <TicketSphereLogo className="animate-logo-glow group-hover:scale-105 group-hover:rotate-6 transition-transform duration-200 ring-1 ring-white/25" />
+          <ImpactTitle text="TicketSphere" size="md" />
         </div>
 
-        <div className="relative z-10 max-w-md space-y-6 animate-fade-up" style={{ animationDelay: '70ms' }}>
-          <div className="space-y-3">
+        <div className="relative z-10 max-w-md space-y-6">
+          <div className="space-y-3 animate-fade-up" style={{ animationDelay: '80ms' }}>
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-200 dark:text-blue-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               IT Service Management
             </p>
             <h1 className="text-2xl xl:text-3xl font-bold tracking-tight leading-snug text-white">
-              Structured incident tracking, Outlook mail sync, and Jira escalation.
+              Structured incident tracking,{' '}
+              <span className="text-cyan-200 dark:text-sky-300">Outlook mail sync</span>, and Jira escalation.
             </h1>
 
           </div>
 
           <div className="space-y-2.5 pt-3 border-t border-white/15 dark:border-zinc-800/80">
-            <div className="ts-card-hover flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800">
-              <div className="h-7 w-7 rounded-lg bg-white/15 text-cyan-200 dark:bg-blue-500/15 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div
+              className="group ts-card-hover animate-fade-up flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800"
+              style={{ animationDelay: '160ms' }}
+            >
+              <div className="h-7 w-7 rounded-lg bg-white/15 text-cyan-200 dark:bg-blue-500/15 dark:text-blue-400 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
                 <Mail className="h-4 w-4" />
               </div>
               <div>
@@ -130,8 +135,11 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-            <div className="ts-card-hover flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800">
-              <div className="h-7 w-7 rounded-lg bg-white/15 text-cyan-200 dark:bg-sky-500/15 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div
+              className="group ts-card-hover animate-fade-up flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800"
+              style={{ animationDelay: '260ms' }}
+            >
+              <div className="h-7 w-7 rounded-lg bg-white/15 text-cyan-200 dark:bg-sky-500/15 dark:text-blue-400 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
                 <GitBranch className="h-4 w-4" />
               </div>
               <div>
@@ -141,8 +149,11 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-            <div className="ts-card-hover flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800">
-              <div className="h-7 w-7 rounded-lg bg-white/15 text-emerald-300 dark:bg-emerald-500/15 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div
+              className="group ts-card-hover animate-fade-up flex items-start gap-3 rounded-xl p-3 bg-white/10 backdrop-blur-xs border border-white/15 hover:bg-white/15 dark:bg-white/[0.02] dark:border-transparent dark:hover:border-zinc-800"
+              style={{ animationDelay: '360ms' }}
+            >
+              <div className="h-7 w-7 rounded-lg bg-white/15 text-emerald-300 dark:bg-emerald-500/15 dark:text-blue-400 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <div>
@@ -155,9 +166,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between gap-3 text-xs text-blue-100/75 dark:text-zinc-400 border-t border-white/15 dark:border-zinc-800 pt-5">
+        <div
+          className="relative z-10 flex items-center justify-between gap-3 text-xs text-blue-100/75 dark:text-zinc-400 border-t border-white/15 dark:border-zinc-800 pt-5 animate-fade-up"
+          style={{ animationDelay: '440ms' }}
+        >
           <span>TicketSphere Platform</span>
-          <div className="rounded-md bg-white/95 px-2.5 py-1 shadow-xs flex items-center">
+          <div className="rounded-md bg-white/95 px-2.5 py-1 shadow-xs flex items-center transition-transform duration-200 hover:scale-105">
             <img
               src="/incede-logo.png"
               alt="Incede"
@@ -220,8 +234,8 @@ export default function LoginPage() {
                         setError(null);
                       }}
                       className={`rounded py-1.5 transition ${mode === 'login'
-                          ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
+                        : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
                         }`}
                     >
                       Sign In
@@ -233,8 +247,8 @@ export default function LoginPage() {
                         setError(null);
                       }}
                       className={`rounded py-1.5 transition ${mode === 'register'
-                          ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        ? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
+                        : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
                         }`}
                     >
                       Create Account

@@ -20,6 +20,7 @@ import { useNavigation } from '../../context/NavigationContext';
 import { DynamicIcon } from '../../utils/iconMap';
 import { ThemeToggle } from '../ThemeToggle';
 import { TicketSphereLogo } from '../TicketSphereLogo';
+import { ImpactTitle } from '../ImpactTitle';
 
 interface NotificationItem {
   id: string;
@@ -140,14 +141,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const SidebarContent = (
     <div className="flex h-full flex-col bg-gradient-to-b from-[#0F172A] via-[#111B33] to-[#0B1120] border-r border-slate-800/90 text-slate-200">
-      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-800/90">
-        <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden group">
-          <TicketSphereLogo className="group-hover:scale-105 group-hover:rotate-6 transition-transform duration-200 ring-1 ring-white/15" />
-          {!collapsed && (
-            <span className="text-sm font-bold tracking-tight text-white truncate">
-              TicketSphere
-            </span>
-          )}
+      <div className="relative flex h-16 items-center justify-between px-4 border-b border-slate-800/90 overflow-hidden">
+        <div className="pointer-events-none absolute -top-8 -left-8 h-24 w-24 rounded-full bg-cyan-400/15 blur-2xl animate-float" />
+        <Link
+          to="/dashboard"
+          className="relative z-10 flex items-center gap-2.5 overflow-visible group"
+        >
+          <TicketSphereLogo className="animate-logo-glow group-hover:scale-105 group-hover:rotate-6 transition-transform duration-200 ring-1 ring-white/25" />
+          {!collapsed && <ImpactTitle text="TicketSphere" size="sm" />}
         </Link>
         <button
           type="button"
@@ -186,18 +187,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={mod.id}
                   to={mod.route}
                   onClick={() => setMobileOpen(false)}
-                  className={`ts-nav-item flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium ${
-                    isModuleActive
-                      ? 'bg-gradient-to-r from-blue-600/30 via-indigo-500/20 to-cyan-500/10 text-white border-l-2 border-cyan-400 shadow-2xs'
-                      : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-                  }`}
+                  className={`ts-nav-item flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium ${isModuleActive
+                    ? 'bg-gradient-to-r from-blue-600/30 via-indigo-500/20 to-cyan-500/10 text-white border-l-2 border-cyan-400 shadow-2xs'
+                    : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                    }`}
                   title={collapsed ? mod.name : undefined}
                 >
                   <DynamicIcon
                     name={mod.icon}
-                    className={`h-4 w-4 shrink-0 ${
-                      isModuleActive ? 'text-cyan-300' : 'text-slate-400'
-                    }`}
+                    className={`h-4 w-4 shrink-0 ${isModuleActive ? 'text-cyan-300' : 'text-slate-400'
+                      }`}
                   />
                   {!collapsed && <span className="truncate">{mod.name}</span>}
                 </Link>
@@ -216,27 +215,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                       toggleModuleExpand(mod.id);
                     }
                   }}
-                  className={`ts-nav-item flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium ${
-                    isModuleActive
-                      ? 'text-white bg-white/[0.08]'
-                      : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-                  }`}
+                  className={`ts-nav-item flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium ${isModuleActive
+                    ? 'text-white bg-white/[0.08]'
+                    : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                    }`}
                   title={collapsed ? mod.name : undefined}
                 >
                   <span className="flex items-center gap-2.5 min-w-0">
                     <DynamicIcon
                       name={mod.icon}
-                      className={`h-4 w-4 shrink-0 ${
-                        isModuleActive ? 'text-cyan-300' : 'text-slate-400'
-                      }`}
+                      className={`h-4 w-4 shrink-0 ${isModuleActive ? 'text-cyan-300' : 'text-slate-400'
+                        }`}
                     />
                     {!collapsed && <span className="truncate">{mod.name}</span>}
                   </span>
                   {!collapsed && (
                     <ChevronDown
-                      className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
-                        isExpanded ? 'rotate-180' : ''
-                      }`}
+                      className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''
+                        }`}
                     />
                   )}
                 </button>
@@ -250,17 +246,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                           key={sub.id}
                           to={sub.route}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                            subActive
-                              ? 'bg-blue-500/20 text-cyan-300'
-                              : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
-                          }`}
+                          className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${subActive
+                            ? 'bg-blue-500/20 text-cyan-300'
+                            : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
+                            }`}
                         >
                           <DynamicIcon
                             name={sub.icon}
-                            className={`h-3.5 w-3.5 shrink-0 ${
-                              subActive ? 'text-cyan-300' : 'text-slate-500'
-                            }`}
+                            className={`h-3.5 w-3.5 shrink-0 ${subActive ? 'text-cyan-300' : 'text-slate-500'
+                              }`}
                           />
                           <span className="truncate">{sub.name}</span>
                         </Link>
@@ -301,9 +295,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-[#D9E4F5] via-[#E2EAF7] to-[#D4E0F2] text-zinc-900 dark:bg-none dark:bg-[#0D1017] dark:text-zinc-100 transition-colors">
       <aside
-        className={`hidden lg:block shrink-0 transition-all duration-150 ${
-          collapsed ? 'w-[64px]' : 'w-60'
-        }`}
+        className={`hidden lg:block shrink-0 transition-all duration-150 ${collapsed ? 'w-[64px]' : 'w-60'
+          }`}
       >
         <div className="sticky top-0 h-screen">{SidebarContent}</div>
       </aside>
@@ -411,9 +404,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                           key={n.id}
                           type="button"
                           onClick={() => void handleMarkRead(n)}
-                          className={`w-full text-left px-3.5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition ${
-                            !n.isRead ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
-                          }`}
+                          className={`w-full text-left px-3.5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition ${!n.isRead ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''
+                            }`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">

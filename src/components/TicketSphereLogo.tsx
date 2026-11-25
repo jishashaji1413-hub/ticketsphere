@@ -1,16 +1,18 @@
 export function TicketSphereLogo({
   size = 'md',
   className = '',
+  animated = true,
 }: {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  animated?: boolean;
 }) {
   const dims =
     size === 'sm' ? 'h-7 w-7' : size === 'lg' ? 'h-9 w-9' : 'h-8 w-8';
 
   return (
     <div
-      className={`${dims} shrink-0 rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-sm shadow-blue-500/25 ${className}`}
+      className={`${dims} relative shrink-0 rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-sm shadow-blue-500/25 ${className}`}
     >
       <svg
         viewBox="0 0 24 24"
@@ -20,7 +22,7 @@ export function TicketSphereLogo({
         strokeLinecap="round"
         strokeLinejoin="round"
         xmlns="http://www.w3.org/2000/svg"
-        className="h-4.5 w-4.5"
+        className={`h-4.5 w-4.5 ${animated ? 'animate-orbit-slow' : ''}`}
         aria-hidden="true"
       >
         <circle cx="12" cy="12" r="3" />
